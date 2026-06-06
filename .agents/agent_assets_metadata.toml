@@ -1,0 +1,32 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "0onp-jezebY8sOaHL_Z1C"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "sankalp om icon"
+
+[[generated]]
+id = "yvJfrcDCDWusPmeHTdzOj"
+uri = "file://artifacts/mobile/assets/images/festival_banner.png"
+type = "image"
+title = "festival banner"
+
+[[generated]]
+id = "TdrYE1O1om-jtEzdvNHZF"
+uri = "file://artifacts/mobile/assets/images/pandit1.png"
+type = "image"
+title = "pandit portrait 1"
+
+[[generated]]
+id = "Ya3qlJ_nPKRJ1aSzT-oVj"
+uri = "file://artifacts/mobile/assets/images/pandit2.png"
+type = "image"
+title = "pandit portrait 2"
+
+[[generated]]
+id = "HFquZ6LQX9Kk0s8pd2DJ5"
+uri = "file://artifacts/mobile/assets/images/store_thali.png"
+type = "image"
+title = "pooja thali store"
