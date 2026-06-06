@@ -14,25 +14,39 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { STORE_ITEMS } from '@/constants/data';
+import { STORE_ITEMS, UTENSILS } from '@/constants/data';
 import { STORE_IMAGES } from '@/constants/images';
 import { useCart } from '@/context/CartContext';
 import { useColors } from '@/hooks/useColors';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 
+const UTENSIL_COLORS: Record<string, string> = {
+  ut1: '#C89A3C', ut2: '#D4722A', ut3: '#C89A3C',
+  ut4: '#7B4F2E', ut5: '#8B7355', ut6: '#8B8B8B',
+};
+
+const UTENSIL_ICONS: Record<string, string> = {
+  ut1: 'sun', ut2: 'droplet', ut3: 'bell',
+  ut4: 'wind', ut5: 'circle', ut6: 'disc',
+};
+
 export default function StoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { addItem, itemCount } = useCart();
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'samagri' | 'utensils'>('samagri');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   const featured = STORE_ITEMS.find(i => i.featured)!;
-  const trending = STORE_ITEMS.filter(i => !i.featured);
-  const filtered = search
-    ? trending.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
-    : trending;
+  const samagriItems = STORE_ITEMS.filter(i => !i.featured);
+  const filteredSamagri = search
+    ? samagriItems.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+    : samagriItems;
+  const filteredUtensils = search
+    ? UTENSILS.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+    : UTENSILS;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -49,10 +63,7 @@ export default function StoreScreen() {
         </Pressable>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 20 }}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 20 }}>
         {/* Search */}
         <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="search" size={18} color={colors.mutedForeground} />
@@ -68,14 +79,10 @@ export default function StoreScreen() {
         {/* Featured Product */}
         {!search && (
           <View style={[styles.featuredCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Image
-              source={STORE_IMAGES[featured.id]}
-              style={styles.featuredImage}
-              resizeMode="cover"
-            />
+            <Image source={STORE_IMAGES[featured.id]} style={styles.featuredImage} resizeMode="cover" />
             <View style={styles.featuredInfo}>
               <View style={[styles.premiumBadge, { backgroundColor: colors.gold + '20' }]}>
-                <Text style={[styles.premiumText, { color: colors.gold }]}>PREMIUM</Text>
+                <Text style={[styles.premiumText, { color: colors.gold }]}>★ PREMIUM PICK</Text>
               </View>
               <Text style={[styles.featuredName, { color: colors.text }]}>{featured.name}</Text>
               <Text style={[styles.featuredUnit, { color: colors.mutedForeground }]}>{featured.unit}</Text>
@@ -88,47 +95,117 @@ export default function StoreScreen() {
                     addItem({ id: featured.id, name: featured.name, price: featured.price, unit: featured.unit });
                   }}
                 >
-                  <Text style={styles.addBtnText}>ADD</Text>
+                  <Text style={styles.addBtnText}>ADD TO CART</Text>
                 </Pressable>
               </View>
             </View>
           </View>
         )}
 
-        {/* Trending */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{search ? 'Results' : 'Trending Now'}</Text>
-          {!search && <Text style={[styles.viewAll, { color: colors.accent }]}>VIEW ALL</Text>}
-        </View>
-
-        <View style={styles.grid}>
-          {filtered.map(item => (
+        {/* Category Tabs */}
+        {!search && (
+          <View style={[styles.tabsRow, { borderBottomColor: colors.border }]}>
             <Pressable
-              key={item.id}
-              style={[styles.gridCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.tab, activeTab === 'samagri' && { borderBottomColor: colors.primary }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setActiveTab('samagri');
+              }}
             >
-              <Image
-                source={STORE_IMAGES[item.id]}
-                style={styles.gridImage}
-                resizeMode="cover"
-              />
-              <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={2}>{item.name}</Text>
-              <Text style={[styles.gridUnit, { color: colors.mutedForeground }]} numberOfLines={1}>{item.unit}</Text>
-              <View style={styles.gridFooter}>
-                <Text style={[styles.gridPrice, { color: colors.primary }]}>₹{item.price.toLocaleString('en-IN')}</Text>
-                <Pressable
-                  style={[styles.gridAddBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    addItem({ id: item.id, name: item.name, price: item.price, unit: item.unit });
-                  }}
-                >
-                  <Feather name="plus" size={14} color="#FFFFFF" />
-                </Pressable>
-              </View>
+              <Text style={[styles.tabText, { color: activeTab === 'samagri' ? colors.primary : colors.mutedForeground }]}>
+                Pooja Samagri
+              </Text>
             </Pressable>
-          ))}
-        </View>
+            <Pressable
+              style={[styles.tab, activeTab === 'utensils' && { borderBottomColor: colors.primary }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setActiveTab('utensils');
+              }}
+            >
+              <Text style={[styles.tabText, { color: activeTab === 'utensils' ? colors.primary : colors.mutedForeground }]}>
+                Pooja Utensils
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Samagri Grid */}
+        {(search || activeTab === 'samagri') && (
+          <>
+            {!search && (
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Trending Samagri</Text>
+                <Text style={[styles.viewAll, { color: colors.accent }]}>VIEW ALL</Text>
+              </View>
+            )}
+            <View style={styles.grid}>
+              {(search ? filteredSamagri : filteredSamagri).map(item => (
+                <Pressable
+                  key={item.id}
+                  style={[styles.gridCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                >
+                  <Image source={STORE_IMAGES[item.id]} style={styles.gridImage} resizeMode="cover" />
+                  <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={2}>{item.name}</Text>
+                  <Text style={[styles.gridUnit, { color: colors.mutedForeground }]} numberOfLines={1}>{item.unit}</Text>
+                  <View style={styles.gridFooter}>
+                    <Text style={[styles.gridPrice, { color: colors.primary }]}>₹{item.price.toLocaleString('en-IN')}</Text>
+                    <Pressable
+                      style={[styles.gridAddBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        addItem({ id: item.id, name: item.name, price: item.price, unit: item.unit });
+                      }}
+                    >
+                      <Feather name="plus" size={14} color="#FFFFFF" />
+                    </Pressable>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* Utensils Section */}
+        {(search || activeTab === 'utensils') && (
+          <>
+            {!search && (
+              <View style={styles.sectionHeader}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Pooja Utensils</Text>
+                  <Text style={[styles.sectionSub, { color: colors.mutedForeground }]}>Authentic ritual vessels & tools</Text>
+                </View>
+                <Text style={[styles.viewAll, { color: colors.accent }]}>VIEW ALL</Text>
+              </View>
+            )}
+            <View style={styles.utensilsList}>
+              {(search ? filteredUtensils : filteredUtensils).map(item => (
+                <View key={item.id} style={[styles.utensilCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={[styles.utensilIconWrap, { backgroundColor: UTENSIL_COLORS[item.id] + '20' }]}>
+                    <Feather name={UTENSIL_ICONS[item.id] as any} size={22} color={UTENSIL_COLORS[item.id]} />
+                  </View>
+                  <View style={styles.utensilInfo}>
+                    <Text style={[styles.utensilName, { color: colors.text }]}>{item.name}</Text>
+                    <Text style={[styles.utensilUnit, { color: colors.mutedForeground }]}>{item.unit}</Text>
+                    <Text style={[styles.utensilDesc, { color: colors.mutedForeground }]}>{item.description}</Text>
+                  </View>
+                  <View style={styles.utensilRight}>
+                    <Text style={[styles.utensilPrice, { color: colors.primary }]}>₹{item.price.toLocaleString('en-IN')}</Text>
+                    <Pressable
+                      style={[styles.utensilAddBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        addItem({ id: item.id, name: item.name, price: item.price, unit: item.unit });
+                      }}
+                    >
+                      <Feather name="plus" size={14} color="#FFFFFF" />
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -137,103 +214,71 @@ export default function StoreScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1,
   },
   headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold' },
   cartBtn: { position: 'relative', padding: 4 },
   badge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', top: 0, right: 0, width: 18, height: 18,
+    borderRadius: 9, alignItems: 'center', justifyContent: 'center',
   },
   badgeText: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 10,
+    flexDirection: 'row', alignItems: 'center', margin: 20,
+    paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1, gap: 10,
   },
   searchInput: { flex: 1, fontSize: 14, padding: 0 },
   featuredCard: {
-    marginHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-    marginBottom: 24,
+    marginHorizontal: 20, borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 8,
   },
-  featuredImage: {
-    width: '100%',
-    height: 200,
-  },
+  featuredImage: { width: '100%', height: 200 },
   featuredInfo: { padding: 16 },
-  premiumBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
+  premiumBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 8 },
   premiumText: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 1 },
   featuredName: { fontSize: 18, fontFamily: 'Inter_700Bold', marginBottom: 4 },
   featuredUnit: { fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 12 },
   featuredFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   featuredPrice: { fontSize: 22, fontFamily: 'Inter_700Bold' },
-  addBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 10,
+  addBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
+  addBtnText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 13 },
+  tabsRow: {
+    flexDirection: 'row', marginHorizontal: 20, marginBottom: 16,
+    borderBottomWidth: 1, marginTop: 8,
   },
-  addBtnText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 14 },
+  tab: {
+    flex: 1, paddingVertical: 12, alignItems: 'center',
+    borderBottomWidth: 2, borderBottomColor: 'transparent',
+  },
+  tabText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 14,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, marginBottom: 14,
   },
-  sectionTitle: { fontSize: 18, fontFamily: 'Inter_700Bold' },
+  sectionTitle: { fontSize: 17, fontFamily: 'Inter_700Bold' },
+  sectionSub: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
   viewAll: { fontSize: 12, fontFamily: 'Inter_600SemiBold', letterSpacing: 1 },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    gap: 10,
-  },
-  gridCard: {
-    width: '47%',
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: 'hidden',
-    paddingBottom: 12,
-  },
-  gridImage: {
-    width: '100%',
-    height: 110,
-    marginBottom: 10,
-  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 10, marginBottom: 8 },
+  gridCard: { width: '47%', borderRadius: 14, borderWidth: 1, overflow: 'hidden', paddingBottom: 12 },
+  gridImage: { width: '100%', height: 110, marginBottom: 10 },
   gridName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 3, lineHeight: 18, paddingHorizontal: 10 },
   gridUnit: { fontSize: 11, fontFamily: 'Inter_400Regular', marginBottom: 8, paddingHorizontal: 10 },
   gridFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10 },
   gridPrice: { fontSize: 15, fontFamily: 'Inter_700Bold' },
-  gridAddBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+  gridAddBtn: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  utensilsList: { paddingHorizontal: 20, gap: 10, marginBottom: 16 },
+  utensilCard: {
+    flexDirection: 'row', alignItems: 'center', padding: 14,
+    borderRadius: 14, borderWidth: 1, gap: 12,
   },
+  utensilIconWrap: {
+    width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+  },
+  utensilInfo: { flex: 1 },
+  utensilName: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
+  utensilUnit: { fontSize: 11, fontFamily: 'Inter_400Regular', marginBottom: 2 },
+  utensilDesc: { fontSize: 11, fontFamily: 'Inter_400Regular' },
+  utensilRight: { alignItems: 'flex-end', gap: 8 },
+  utensilPrice: { fontSize: 15, fontFamily: 'Inter_700Bold' },
+  utensilAddBtn: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 });

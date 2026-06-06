@@ -12,6 +12,12 @@ export const STORE_IMAGES: Record<string, any> = {
   'si4': require('../assets/images/pooja_thali.jpg'),
   'si5': require('../assets/images/store_thali.png'),
   'si6': require('../assets/images/store_thali.png'),
+  'ut1': require('../assets/images/pooja_thali.jpg'),
+  'ut2': require('../assets/images/pooja_thali.jpg'),
+  'ut3': require('../assets/images/pooja_thali.jpg'),
+  'ut4': require('../assets/images/store_thali.png'),
+  'ut5': require('../assets/images/store_thali.png'),
+  'ut6': require('../assets/images/pooja_thali.jpg'),
 };
 
 export const FESTIVAL_BANNER = require('../assets/images/festival_banner.png');

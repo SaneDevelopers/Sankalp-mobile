@@ -25,6 +25,8 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="poojas" options={{ headerShown: false }} />
+      <Stack.Screen name="pandits-by-pooja" options={{ headerShown: false }} />
       <Stack.Screen name="pandit/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="cart" options={{ headerShown: false }} />
