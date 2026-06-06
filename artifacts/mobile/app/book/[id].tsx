@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DATES, PANDITS } from '@/constants/data';
+import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 
 export default function BookScreen() {
@@ -43,9 +45,11 @@ export default function BookScreen() {
         <View style={styles.body}>
           {/* Pandit Mini Card */}
           <View style={[styles.panditCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.panditAvatar, { backgroundColor: pandit.avatarColor }]}>
-              <Text style={styles.panditAvatarText}>{pandit.initials}</Text>
-            </View>
+            <Image
+              source={PANDIT_IMAGES[pandit.id]}
+              style={styles.panditAvatar}
+              resizeMode="cover"
+            />
             <View style={styles.panditInfo}>
               <Text style={[styles.panditName, { color: colors.text }]}>{pandit.name}</Text>
               <Text style={[styles.panditSpec, { color: colors.mutedForeground }]}>{pandit.specialty} · {pandit.experience}</Text>
@@ -67,7 +71,9 @@ export default function BookScreen() {
           >
             <View style={styles.poojaSelectorContent}>
               <Text style={[styles.poojaSelectorName, { color: colors.text }]}>{selectedPooja.name}</Text>
-              <Text style={[styles.poojaSelectorMeta, { color: colors.mutedForeground }]}>{selectedPooja.duration} · Includes Prasad</Text>
+              <Text style={[styles.poojaSelectorMeta, { color: colors.mutedForeground }]}>
+                {selectedPooja.duration} · Includes Prasad
+              </Text>
             </View>
             <View style={styles.poojaPriceCol}>
               <Text style={[styles.poojaPrice, { color: colors.primary }]}>₹{selectedPooja.price.toLocaleString('en-IN')}</Text>
@@ -105,15 +111,22 @@ export default function BookScreen() {
                 key={idx}
                 style={[
                   styles.dateChip,
-                  { borderColor: selectedDate === idx ? colors.primary : colors.border, backgroundColor: selectedDate === idx ? colors.primary : colors.card },
+                  {
+                    borderColor: selectedDate === idx ? colors.primary : colors.border,
+                    backgroundColor: selectedDate === idx ? colors.primary : colors.card,
+                  },
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setSelectedDate(idx);
                 }}
               >
-                <Text style={[styles.dateDay, { color: selectedDate === idx ? 'rgba(255,255,255,0.7)' : colors.mutedForeground }]}>{d.day}</Text>
-                <Text style={[styles.dateNum, { color: selectedDate === idx ? '#FFFFFF' : colors.text }]}>{d.date}</Text>
+                <Text style={[styles.dateDay, { color: selectedDate === idx ? 'rgba(255,255,255,0.7)' : colors.mutedForeground }]}>
+                  {d.day}
+                </Text>
+                <Text style={[styles.dateNum, { color: selectedDate === idx ? '#FFFFFF' : colors.text }]}>
+                  {d.date}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -126,7 +139,10 @@ export default function BookScreen() {
                 key={idx}
                 style={[
                   styles.timeChip,
-                  { borderColor: selectedTime === idx ? colors.primary : colors.border, backgroundColor: selectedTime === idx ? colors.primary : colors.card },
+                  {
+                    borderColor: selectedTime === idx ? colors.primary : colors.border,
+                    backgroundColor: selectedTime === idx ? colors.primary : colors.card,
+                  },
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -146,7 +162,9 @@ export default function BookScreen() {
             </View>
             <View style={styles.addressInfo}>
               <Text style={[styles.addressTitle, { color: colors.text }]}>Home · Arnav Sharma</Text>
-              <Text style={[styles.addressText, { color: colors.mutedForeground }]}>A-301, Lotus Towers, Sector 62, Noida – 201301</Text>
+              <Text style={[styles.addressText, { color: colors.mutedForeground }]}>
+                A-301, Lotus Towers, Sector 62, Noida – 201301
+              </Text>
             </View>
             <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
           </View>
@@ -185,20 +203,17 @@ const styles = StyleSheet.create({
   panditCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    padding: 12,
     borderRadius: 14,
     borderWidth: 1,
     marginBottom: 24,
     gap: 12,
   },
   panditAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
   },
-  panditAvatarText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 16 },
   panditInfo: { flex: 1 },
   panditName: { fontSize: 15, fontFamily: 'Inter_700Bold' },
   panditSpec: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 2 },

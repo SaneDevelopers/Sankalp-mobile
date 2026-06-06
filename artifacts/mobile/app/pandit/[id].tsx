@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PANDITS } from '@/constants/data';
+import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 
 export default function PanditDetailScreen() {
@@ -28,52 +30,64 @@ export default function PanditDetailScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 + bottomPadding }}>
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: topPadding + 12 }]}>
-          <Pressable onPress={() => router.back()} style={[styles.circleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Feather name="arrow-left" size={20} color={colors.primary} />
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setLiked(!liked);
-            }}
-            style={[styles.circleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <Feather name="heart" size={20} color={liked ? colors.destructive : colors.mutedForeground} />
-          </Pressable>
+
+        {/* Hero Photo */}
+        <View style={styles.heroContainer}>
+          <Image
+            source={PANDIT_IMAGES[pandit.id]}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          {/* Gradient overlay at bottom */}
+          <View style={[styles.heroOverlay, { backgroundColor: colors.background }]} />
+
+          {/* Floating buttons */}
+          <View style={[styles.heroButtons, { paddingTop: topPadding + 12 }]}>
+            <Pressable
+              onPress={() => router.back()}
+              style={[styles.circleBtn, { backgroundColor: 'rgba(255,255,255,0.9)' }]}
+            >
+              <Feather name="arrow-left" size={20} color={colors.primary} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setLiked(!liked);
+              }}
+              style={[styles.circleBtn, { backgroundColor: 'rgba(255,255,255,0.9)' }]}
+            >
+              <Feather name="heart" size={20} color={liked ? colors.destructive : colors.mutedForeground} />
+            </Pressable>
+          </View>
         </View>
 
-        {/* Avatar Section */}
-        <View style={[styles.avatarSection, { backgroundColor: colors.card }]}>
-          <View style={[styles.avatarLarge, { backgroundColor: pandit.avatarColor }]}>
-            <Text style={styles.avatarText}>{pandit.initials}</Text>
-          </View>
+        {/* Name + Rating */}
+        <View style={styles.nameSection}>
           <View style={styles.nameRow}>
             <Text style={[styles.panditName, { color: colors.text }]}>{pandit.name}</Text>
-            <View style={styles.ratingBadge}>
-              <Feather name="star" size={14} color={colors.gold} />
+            <View style={[styles.ratingBadge, { backgroundColor: colors.gold + '20' }]}>
+              <Feather name="star" size={13} color={colors.gold} />
               <Text style={[styles.rating, { color: colors.text }]}>{pandit.rating}</Text>
             </View>
           </View>
           <Text style={[styles.specialty, { color: colors.mutedForeground }]}>{pandit.specialty}</Text>
+        </View>
 
-          {/* Stats */}
-          <View style={[styles.statsRow, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
-            <View style={styles.stat}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{pandit.experience}</Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>EXPERIENCE</Text>
-            </View>
-            <View style={[styles.statDiv, { backgroundColor: colors.border }]} />
-            <View style={styles.stat}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{pandit.bookings.toLocaleString('en-IN')}</Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>BOOKINGS</Text>
-            </View>
-            <View style={[styles.statDiv, { backgroundColor: colors.border }]} />
-            <View style={styles.stat}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{pandit.age} Yrs</Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>AGE</Text>
-            </View>
+        {/* Stats */}
+        <View style={[styles.statsRow, { borderTopColor: colors.border, borderBottomColor: colors.border, backgroundColor: colors.card }]}>
+          <View style={styles.stat}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{pandit.experience}</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>EXPERIENCE</Text>
+          </View>
+          <View style={[styles.statDiv, { backgroundColor: colors.border }]} />
+          <View style={styles.stat}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{pandit.bookings.toLocaleString('en-IN')}</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>BOOKINGS</Text>
+          </View>
+          <View style={[styles.statDiv, { backgroundColor: colors.border }]} />
+          <View style={styles.stat}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{pandit.age} Yrs</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>AGE</Text>
           </View>
         </View>
 
@@ -118,7 +132,7 @@ export default function PanditDetailScreen() {
               <View style={styles.poojaInfo}>
                 <Text style={[styles.poojaName, { color: colors.text }]}>{pooja.name}</Text>
                 <Text style={[styles.poojaMeta, { color: colors.mutedForeground }]}>
-                  {pooja.duration} {pooja.includesPrasad ? '· Includes Prasad' : ''}
+                  {pooja.duration}{pooja.includesPrasad ? ' · Includes Prasad' : ''}
                 </Text>
               </View>
               <Text style={[styles.poojaPrice, { color: colors.primary }]}>₹{pooja.price.toLocaleString('en-IN')}</Text>
@@ -136,7 +150,7 @@ export default function PanditDetailScreen() {
             router.push(`/book/${pandit.id}` as any);
           }}
         >
-          <Text style={styles.bookBtnText}>Book {pandit.name.split(' ')[1]}</Text>
+          <Text style={styles.bookBtnText}>Book {pandit.name.split(' ').slice(-1)[0]}</Text>
         </Pressable>
       </View>
     </View>
@@ -145,11 +159,30 @@ export default function PanditDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
+  heroContainer: {
+    position: 'relative',
+    height: 320,
+  },
+  heroImage: {
+    width: '100%',
+    height: 320,
+  },
+  heroOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    opacity: 0.0,
+  },
+  heroButtons: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingBottom: 16,
   },
   circleBtn: {
     width: 42,
@@ -157,43 +190,45 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  avatarSection: {
-    alignItems: 'center',
-    paddingBottom: 0,
-    marginBottom: 16,
+  nameSection: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
-  avatarLarge: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  avatarText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 36 },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
-  panditName: { fontSize: 22, fontFamily: 'Inter_700Bold' },
-  ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  panditName: { fontSize: 22, fontFamily: 'Inter_700Bold', flex: 1 },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
   rating: { fontSize: 15, fontFamily: 'Inter_700Bold' },
-  specialty: { fontSize: 14, fontFamily: 'Inter_400Regular', marginBottom: 20 },
+  specialty: { fontSize: 14, fontFamily: 'Inter_400Regular', marginBottom: 16 },
   statsRow: {
     flexDirection: 'row',
-    width: '100%',
     paddingVertical: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
+    marginBottom: 16,
   },
   stat: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: 18, fontFamily: 'Inter_700Bold', marginBottom: 3 },
   statLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1 },
-  statDiv: { width: 1, height: '100%' },
+  statDiv: { width: 1 },
   body: { paddingHorizontal: 20 },
   section: {
     borderRadius: 14,

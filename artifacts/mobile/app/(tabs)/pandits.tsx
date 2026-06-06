@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   FlatList,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PANDITS, Pandit } from '@/constants/data';
+import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 
 const FILTERS = ['ALL', 'VEDIC', 'ASTROLOGY', 'HAVAN'];
@@ -86,9 +88,11 @@ export default function PanditsScreen() {
                 router.push(`/pandit/${item.id}` as any);
               }}
             >
-              <View style={[styles.avatar, { backgroundColor: item.avatarColor }]}>
-                <Text style={styles.avatarText}>{item.initials}</Text>
-              </View>
+              <Image
+                source={PANDIT_IMAGES[item.id]}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
               <View style={styles.info}>
                 <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                 <Text style={[styles.specialty, { color: colors.mutedForeground }]}>{item.specialty} · {item.experience}</Text>
@@ -159,13 +163,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
-  avatarText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 18 },
   info: { flex: 1, gap: 3 },
   name: { fontSize: 15, fontFamily: 'Inter_700Bold' },
   specialty: { fontSize: 12, fontFamily: 'Inter_400Regular' },

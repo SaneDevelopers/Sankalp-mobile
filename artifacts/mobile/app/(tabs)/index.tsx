@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FEATURED_POOJAS, PANDITS, SERVICES } from '@/constants/data';
+import { FESTIVAL_BANNER, PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
@@ -24,7 +25,6 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
-
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   return (
@@ -69,21 +69,24 @@ export default function HomeScreen() {
           style={[styles.festivalBanner, { backgroundColor: colors.primary }]}
           onPress={() => router.push('/(tabs)/pandits')}
         >
-          <View style={styles.festivalBadge}>
-            <Feather name="star" size={10} color={colors.gold} />
-            <Text style={[styles.festivalBadgeText, { color: colors.gold }]}>FESTIVAL SPECIAL</Text>
+          <Image source={FESTIVAL_BANNER} style={styles.festivalBg} resizeMode="cover" />
+          <View style={styles.festivalOverlay}>
+            <View style={styles.festivalBadge}>
+              <Feather name="star" size={10} color={colors.gold} />
+              <Text style={[styles.festivalBadgeText, { color: colors.gold }]}>FESTIVAL SPECIAL</Text>
+            </View>
+            <Text style={styles.festivalTitle}>Diwali Lakshmi{'\n'}Pooja</Text>
+            <Text style={styles.festivalSub}>Book before Oct 28 · Save 20%</Text>
+            <Pressable
+              style={[styles.festivalBtn, { backgroundColor: colors.orange }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(tabs)/pandits');
+              }}
+            >
+              <Text style={styles.festivalBtnText}>BOOK NOW</Text>
+            </Pressable>
           </View>
-          <Text style={styles.festivalTitle}>Diwali Lakshmi{'\n'}Pooja</Text>
-          <Text style={styles.festivalSub}>Book before Oct 28 · Save 20%</Text>
-          <Pressable
-            style={[styles.festivalBtn, { backgroundColor: colors.orange }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/(tabs)/pandits');
-            }}
-          >
-            <Text style={styles.festivalBtnText}>BOOK NOW</Text>
-          </Pressable>
           <View style={styles.omOverlay}>
             <Text style={styles.omText}>ॐ</Text>
           </View>
@@ -131,9 +134,11 @@ export default function HomeScreen() {
                 style={[styles.poojaCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push(`/pandit/${item.panditId}` as any)}
               >
-                <View style={[styles.poojaAvatar, { backgroundColor: pandit.avatarColor }]}>
-                  <Text style={styles.poojaAvatarText}>{pandit.initials}</Text>
-                </View>
+                <Image
+                  source={PANDIT_IMAGES[item.panditId]}
+                  style={styles.poojaAvatar}
+                  resizeMode="cover"
+                />
                 <Text style={[styles.poojaName, { color: colors.text }]} numberOfLines={2}>{item.name}</Text>
                 <Text style={[styles.poojaDuration, { color: colors.mutedForeground }]}>{item.duration}</Text>
                 <View style={styles.poojaFooter}>
@@ -223,10 +228,25 @@ const styles = StyleSheet.create({
   festivalBanner: {
     marginHorizontal: 20,
     borderRadius: 16,
-    padding: 20,
     marginBottom: 24,
     overflow: 'hidden',
-    minHeight: 160,
+    height: 180,
+    position: 'relative',
+  },
+  festivalBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.3,
+  },
+  festivalOverlay: {
+    padding: 20,
+    flex: 1,
+    justifyContent: 'center',
   },
   festivalBadge: {
     flexDirection: 'row',
@@ -250,7 +270,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
     color: 'rgba(255,255,255,0.7)',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   festivalBtn: {
     alignSelf: 'flex-start',
@@ -268,7 +288,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: -10,
-    opacity: 0.12,
+    opacity: 0.15,
   },
   omText: {
     fontSize: 100,
@@ -316,24 +336,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   poojaCard: {
-    width: 150,
+    width: 155,
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     borderWidth: 1,
     marginBottom: 4,
   },
   poojaAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
+    height: 90,
+    borderRadius: 10,
     marginBottom: 10,
-  },
-  poojaAvatarText: {
-    color: '#FFFFFF',
-    fontFamily: 'Inter_700Bold',
-    fontSize: 14,
   },
   poojaName: {
     fontSize: 13,
