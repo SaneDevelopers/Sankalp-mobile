@@ -144,6 +144,10 @@ export default function StoreScreen() {
                 <Pressable
                   key={item.id}
                   style={[styles.gridCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push(`/product/${item.id}` as any);
+                  }}
                 >
                   <Image source={STORE_IMAGES[item.id]} style={styles.gridImage} resizeMode="cover" />
                   <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={2}>{item.name}</Text>
@@ -180,7 +184,14 @@ export default function StoreScreen() {
             )}
             <View style={styles.utensilsList}>
               {(search ? filteredUtensils : filteredUtensils).map(item => (
-                <View key={item.id} style={[styles.utensilCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Pressable
+                key={item.id}
+                style={[styles.utensilCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push(`/product/${item.id}` as any);
+                }}
+              >
                   <View style={[styles.utensilIconWrap, { backgroundColor: UTENSIL_COLORS[item.id] + '20' }]}>
                     <Feather name={UTENSIL_ICONS[item.id] as any} size={22} color={UTENSIL_COLORS[item.id]} />
                   </View>
@@ -201,7 +212,7 @@ export default function StoreScreen() {
                       <Feather name="plus" size={14} color="#FFFFFF" />
                     </Pressable>
                   </View>
-                </View>
+                </Pressable>
               ))}
             </View>
           </>

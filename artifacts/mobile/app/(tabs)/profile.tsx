@@ -17,11 +17,14 @@ import { useColors } from '@/hooks/useColors';
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 
 const MENU_ITEMS = [
-  { id: 'm1', label: 'My Bookings', icon: 'calendar', route: '/(tabs)/bookings' },
-  { id: 'm2', label: 'Saved Addresses', icon: 'map-pin', route: null },
-  { id: 'm3', label: 'Order History', icon: 'package', route: null },
-  { id: 'm4', label: 'Privacy & Security', icon: 'shield', route: null },
-  { id: 'm5', label: 'Settings', icon: 'settings', route: null },
+  { id: 'm1', label: 'Edit Profile', icon: 'user', route: '/edit-profile' },
+  { id: 'm2', label: 'My Bookings', icon: 'calendar', route: '/(tabs)/bookings' },
+  { id: 'm3', label: 'Saved Pandits & Poojas', icon: 'heart', route: '/favorites' },
+  { id: 'm4', label: 'Order History', icon: 'package', route: '/order-history' },
+  { id: 'm5', label: 'Saved Addresses', icon: 'map-pin', route: '/addresses' },
+  { id: 'm6', label: 'Notifications', icon: 'bell', route: '/notifications' },
+  { id: 'm7', label: 'Help & Support', icon: 'help-circle', route: '/help' },
+  { id: 'm8', label: 'Settings', icon: 'settings', route: '/settings' },
 ];
 
 export default function ProfileScreen() {

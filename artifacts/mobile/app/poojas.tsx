@@ -98,7 +98,7 @@ export default function PoojasScreen() {
             style={[styles.poojaCard, { backgroundColor: item.bgColor }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({ pathname: '/pandits-by-pooja', params: { poojaId: item.id, poojaName: item.name } } as any);
+              router.push(`/pooja/${item.id}` as any);
             }}
           >
             {item.bestseller && (

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
@@ -13,9 +14,19 @@ export default function SplashScreen() {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace('/(tabs)');
-    }, 2000);
+    const timer = setTimeout(async () => {
+      try {
+        const onboarded = await AsyncStorage.getItem('@sankalp:onboarded');
+        if (onboarded) {
+          router.replace('/(tabs)');
+        } else {
+          await AsyncStorage.setItem('@sankalp:onboarded', 'true');
+          router.replace('/onboarding' as any);
+        }
+      } catch {
+        router.replace('/(tabs)');
+      }
+    }, 2200);
     return () => clearTimeout(timer);
   }, []);
 

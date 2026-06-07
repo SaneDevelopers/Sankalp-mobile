@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { router } from 'expo-router';
+
 import { BOOKINGS, Booking } from '@/constants/data';
 import { useColors } from '@/hooks/useColors';
 
@@ -82,7 +84,13 @@ export default function BookingsScreen() {
         renderItem={({ item }) => {
           const statusStyle = getStatusStyle(item.status);
           return (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push(`/booking-detail/${item.id}` as any);
+            }}
+          >
               <View style={styles.cardRow}>
                 <View style={[styles.avatar, { backgroundColor: item.panditColor }]}>
                   <Text style={styles.avatarText}>{item.panditInitials}</Text>
@@ -109,7 +117,7 @@ export default function BookingsScreen() {
                 <Text style={[styles.bookingId, { color: colors.mutedForeground }]}>#{item.bookingId}</Text>
                 <Text style={[styles.amount, { color: colors.primary }]}>₹{item.amount.toLocaleString('en-IN')}</Text>
               </View>
-            </View>
+            </Pressable>
           );
         }}
       />

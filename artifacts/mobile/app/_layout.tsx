@@ -24,15 +24,30 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="poojas" options={{ headerShown: false }} />
-      <Stack.Screen name="pandits-by-pooja" options={{ headerShown: false }} />
-      <Stack.Screen name="pandit/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="cart" options={{ headerShown: false }} />
-      <Stack.Screen name="confirmed" options={{ headerShown: false }} />
-      <Stack.Screen name="admin" options={{ headerShown: false }} />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="register" />
+      <Stack.Screen name="otp" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="poojas" />
+      <Stack.Screen name="pandits-by-pooja" />
+      <Stack.Screen name="pooja/[id]" />
+      <Stack.Screen name="pandit/[id]" />
+      <Stack.Screen name="book/[id]" />
+      <Stack.Screen name="booking-detail/[id]" />
+      <Stack.Screen name="product/[id]" />
+      <Stack.Screen name="review/[id]" />
+      <Stack.Screen name="cart" />
+      <Stack.Screen name="confirmed" />
+      <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="help" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="favorites" />
+      <Stack.Screen name="addresses" />
+      <Stack.Screen name="order-history" />
+      <Stack.Screen name="admin" />
     </Stack>
   );
 }
