@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useRef, useCallback } from 'react';
 import {
@@ -55,11 +56,14 @@ export default function SplashScreen() {
     videoWidth = SH * VIDEO_ASPECT_RATIO;
   }
 
+  const isTallScreen = screenAspectRatio < VIDEO_ASPECT_RATIO;
+  const topGap = (SH - videoHeight) / 2;
+  const leftGap = (SW - videoWidth) / 2;
+
   return (
     <ImageBackground
-      source={require('../assets/images/sankalp_logo.jpg')}
+      source={require('../assets/images/sankalp_bg.jpg')}
       style={styles.container}
-      blurRadius={20}
       resizeMode="cover"
     >
       <Video
@@ -75,6 +79,42 @@ export default function SplashScreen() {
         isLooping={false}
         onPlaybackStatusUpdate={onPlaybackStatusUpdate}
       />
+
+      {isTallScreen ? (
+        <>
+          {/* Top Edge Blend (Video top edge starts at topGap) */}
+          <LinearGradient
+            colors={['rgba(195, 175, 139, 0)', 'rgba(195, 175, 139, 1)', 'rgba(195, 175, 139, 0)']}
+            style={[styles.blendTop, { top: topGap - 20 }]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+          {/* Bottom Edge Blend (Video bottom edge ends at topGap + videoHeight) */}
+          <LinearGradient
+            colors={['rgba(204, 184, 155, 0)', 'rgba(204, 184, 155, 1)', 'rgba(204, 184, 155, 0)']}
+            style={[styles.blendBottom, { top: topGap + videoHeight - 20 }]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+        </>
+      ) : (
+        <>
+          {/* Left Edge Blend */}
+          <LinearGradient
+            colors={['rgba(202, 184, 152, 0)', 'rgba(202, 184, 152, 1)', 'rgba(202, 184, 152, 0)']}
+            style={[styles.blendLeft, { left: leftGap - 20 }]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          />
+          {/* Right Edge Blend */}
+          <LinearGradient
+            colors={['rgba(202, 184, 152, 0)', 'rgba(202, 184, 152, 1)', 'rgba(202, 184, 152, 0)']}
+            style={[styles.blendRight, { left: leftGap + videoWidth - 20 }]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          />
+        </>
+      )}
     </ImageBackground>
   );
 }
@@ -84,7 +124,35 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FAF3E8',
+    backgroundColor: '#caba9c',
+  },
+  blendTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 40,
+    zIndex: 10,
+  },
+  blendBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 40,
+    zIndex: 10,
+  },
+  blendLeft: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 40,
+    zIndex: 10,
+  },
+  blendRight: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 40,
+    zIndex: 10,
   },
 });
 
