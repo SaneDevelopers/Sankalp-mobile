@@ -726,7 +726,13 @@ export default function AdminScreen() {
 
         <Pressable
           style={[styles.backBtn, { borderColor: colors.border }]}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/profile');
+            }
+          }}
         >
           <Feather name="arrow-left" size={16} color={colors.mutedForeground} />
           <Text style={[styles.backBtnText, { color: colors.mutedForeground }]}>Back to Profile</Text>
@@ -775,6 +781,8 @@ export default function AdminScreen() {
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoComplete="off"
+                  textContentType="none"
                   value={panditForm.email}
                   onChangeText={val => setPanditForm(prev => ({ ...prev, email: val }))}
                 />
@@ -787,6 +795,8 @@ export default function AdminScreen() {
                   placeholder={panditForm.id ? "Leave blank to keep unchanged" : "Set login password"}
                   placeholderTextColor={colors.mutedForeground}
                   secureTextEntry
+                  autoComplete="off"
+                  textContentType="none"
                   value={panditForm.password}
                   onChangeText={val => setPanditForm(prev => ({ ...prev, password: val }))}
                 />
