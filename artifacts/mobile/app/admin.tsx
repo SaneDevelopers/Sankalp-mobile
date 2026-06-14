@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useColors } from '@/hooks/useColors';
+import { useNotifications } from '@/context/NotificationContext';
 import {
   useGetBookings,
   useUpdateBookingStatus,
@@ -139,6 +140,7 @@ export default function AdminScreen() {
   const [resetLinkModal, setResetLinkModal] = useState<{ visible: boolean; link: string; email: string }>({ visible: false, link: '', email: '' });
 
   // Status transitions
+  const { addNotification } = useNotifications();
   const handleUpdateOrderStatus = async (id: number, status: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
@@ -147,6 +149,7 @@ export default function AdminScreen() {
         data: { status },
       });
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      addNotification('order', 'Order Updated', `Order #${id} status set to ${status}`, 'package');
     } catch (err) {
       console.error(err);
     }
@@ -160,6 +163,7 @@ export default function AdminScreen() {
         data: { status },
       });
       await queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+      addNotification('booking', 'Booking Updated', `Booking #${id} status set to ${status}`, 'calendar');
     } catch (err) {
       console.error(err);
     }
@@ -417,7 +421,7 @@ export default function AdminScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
       {/* Header */}
-      <View style={[styles.adminHeader, { paddingTop: topPadding + 16 }]}>
+      <View style={[styles.adminHeader, { paddingTop: topPadding }]}>
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.adminConsoleLabel}>ADMIN CONSOLE</Text>
