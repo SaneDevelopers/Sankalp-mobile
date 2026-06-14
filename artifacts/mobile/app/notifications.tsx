@@ -31,27 +31,19 @@ const TYPE_COLORS: Record<string, string> = {
   general: '#5C3317',
 };
 
+import { useNotifications } from '@/context/NotificationContext';
+
 export default function NotificationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
-  const { data: user } = useAuthMe();
-  const [notifs, setNotifs] = useState(NOTIFICATIONS);
-
-  React.useEffect(() => {
-    if (user) {
-      setNotifs([]);
-    } else {
-      setNotifs(NOTIFICATIONS);
-    }
-  }, [user]);
+  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
-  const unreadCount = notifs.filter(n => !n.read).length;
 
   const markAllRead = () => {
     Haptics.selectionAsync();
-    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+    markAllAsRead();
   };
 
   return (
@@ -77,7 +69,7 @@ export default function NotificationsScreen() {
       </View>
 
       <FlatList
-        data={notifs}
+        data={notifications}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
@@ -98,7 +90,7 @@ export default function NotificationsScreen() {
                 borderColor: item.read ? colors.border : colors.primary + '30',
               },
             ]}
-            onPress={() => setNotifs(prev => prev.map(n => n.id === item.id ? { ...n, read: true } : n))}
+            onPress={() => markAsRead(item.id)}
           >
             <View style={[styles.iconWrap, { backgroundColor: TYPE_COLORS[item.type] + '15' }]}>
               <Feather name={item.icon as any} size={20} color={TYPE_COLORS[item.type]} />
