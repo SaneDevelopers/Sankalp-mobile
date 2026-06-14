@@ -187,59 +187,66 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={[styles.header, { paddingTop: topPadding + 4 }]}>
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('namaste')}, {displayName}</Text>
-            {/* Location Row */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <Feather name="map-pin" size={11} color={colors.primary} />
-              <Text style={{ fontSize: 11, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>Lucknow, Uttar Pradesh</Text>
-            </View>
+          {/* Left: Big Title */}
+          <View style={{ flex: 1, marginRight: 8, justifyContent: 'flex-end' }}>
             <Text style={[styles.title, { color: colors.primary, fontFamily: f('bold') }]} numberOfLines={2} adjustsFontSizeToFit>
               {t('titleLine1')}{'\n'}{t('titleLine2')}
             </Text>
           </View>
-          <View style={styles.headerActions}>
-            {/* Language Toggle */}
-            <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              <Pressable
-                onPress={() => handleLanguageChange('hi')}
-                style={[
-                  styles.langToggleItem,
-                  lang === 'hi' && { backgroundColor: colors.primary }
-                ]}
-              >
-                <Text style={[
-                  styles.langToggleText,
-                  { color: lang === 'hi' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
-                ]}>
-                  HI
-                </Text>
+
+          {/* Right: Icons on top, Name+Location at bottom */}
+          <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', minHeight: 80 }}>
+            {/* Top: Lang + Bell + Avatar */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Pressable
+                  onPress={() => handleLanguageChange('hi')}
+                  style={[
+                    styles.langToggleItem,
+                    lang === 'hi' && { backgroundColor: colors.primary }
+                  ]}
+                >
+                  <Text style={[
+                    styles.langToggleText,
+                    { color: lang === 'hi' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+                  ]}>
+                    HI
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleLanguageChange('en')}
+                  style={[
+                    styles.langToggleItem,
+                    lang === 'en' && { backgroundColor: colors.primary }
+                  ]}
+                >
+                  <Text style={[
+                    styles.langToggleText,
+                    { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+                  ]}>
+                    ENG
+                  </Text>
+                </Pressable>
+              </View>
+              <Pressable style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Feather name="bell" size={20} color={colors.primary} />
               </Pressable>
               <Pressable
-                onPress={() => handleLanguageChange('en')}
-                style={[
-                  styles.langToggleItem,
-                  lang === 'en' && { backgroundColor: colors.primary }
-                ]}
+                style={[styles.avatarBtn, { backgroundColor: colors.primary }]}
+                onPress={() => router.push('/(tabs)/profile')}
               >
-                <Text style={[
-                  styles.langToggleText,
-                  { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
-                ]}>
-                  ENG
-                </Text>
+                <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
               </Pressable>
             </View>
 
-            <Pressable style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Feather name="bell" size={20} color={colors.primary} />
-            </Pressable>
-            <Pressable
-              style={[styles.avatarBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/(tabs)/profile')}
-            >
-              <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
-            </Pressable>
+            {/* Bottom: Name + Location */}
+            <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
+              <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: f('semibold'), textAlign: 'right' }]}>{t('namaste')}, {displayName}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <Feather name="map-pin" size={10} color={colors.primary} />
+                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>Lucknow, Uttar Pradesh</Text>
+              </View>
+            </View>
           </View>
         </View>
 
