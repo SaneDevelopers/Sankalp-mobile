@@ -9,6 +9,9 @@ const router: IRouter = Router();
 const SEED_PANDITS = [
   {
     name: "Acharya V. Shastri",
+    email: "acharya.v@sankalp.com",
+    password: "password123",
+    imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
     shortName: "Acharya V. Sh...",
     specialty: "Vedic Rituals Specialist",
     category: "vedic",
@@ -33,6 +36,9 @@ const SEED_PANDITS = [
   },
   {
     name: "Pandit K. Narayanan",
+    email: "pandit.k@sankalp.com",
+    password: "password123",
+    imageUrl: "https://randomuser.me/api/portraits/men/44.jpg",
     shortName: "Pandit K. N...",
     specialty: "Astrology & Jyotish Expert",
     category: "astrology",
@@ -57,6 +63,9 @@ const SEED_PANDITS = [
   },
   {
     name: "Acharya R. Joshi",
+    email: "acharya.r@sankalp.com",
+    password: "password123",
+    imageUrl: "https://randomuser.me/api/portraits/men/62.jpg",
     shortName: "Acharya R. J...",
     specialty: "Griha Pravesh Specialist",
     category: "griha",
@@ -81,6 +90,9 @@ const SEED_PANDITS = [
   },
   {
     name: "Pandit S. Mishra",
+    email: "pandit.s@sankalp.com",
+    password: "password123",
+    imageUrl: "https://randomuser.me/api/portraits/men/78.jpg",
     shortName: "Pandit S. M...",
     specialty: "Havan & Yagna Expert",
     category: "havan",
@@ -136,6 +148,9 @@ router.post("/", async (req, res) => {
       .insert(panditsTable)
       .values({
         name: body.name,
+        email: body.email,
+        password: body.password,
+        imageUrl: body.imageUrl,
         shortName: body.shortName,
         specialty: body.specialty,
         category: body.category,
@@ -183,6 +198,9 @@ router.put("/:id", async (req, res) => {
       .update(panditsTable)
       .set({
         name: body.name,
+        email: body.email,
+        password: body.password,
+        imageUrl: body.imageUrl,
         shortName: body.shortName,
         specialty: body.specialty,
         category: body.category,
@@ -243,6 +261,39 @@ router.delete("/:id", async (req, res) => {
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ message: err.message || "Failed to delete pandit" });
+  }
+});
+
+// POST /pandits/forgot-password - Simulate forgot password email link
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
+    }
+
+    const [pandit] = await db.select().from(panditsTable).where(eq(panditsTable.email, email)).limit(1);
+
+    if (!pandit) {
+      // Return 404 if not found
+      res.status(404).json({ message: "Pandit with this email not found" });
+      return;
+    }
+
+    // Generate a simulated reset link
+    const resetToken = Math.random().toString(36).substring(2, 15);
+    const resetLink = `https://admin.sankalp.com/reset-password?token=${resetToken}`;
+
+    // Log the link
+    console.log(`\n\n[MAIL MOCK] Password Reset Link for ${email}:\n => ${resetLink}\n\n`);
+
+    res.json({
+      message: "Password reset link generated successfully",
+      resetLink,
+    });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || "Failed to generate reset link" });
   }
 });
 

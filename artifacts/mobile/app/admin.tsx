@@ -53,6 +53,9 @@ interface PanditFormData {
   poojas: Array<{ id: string; name: string; duration: string; price: number; includesPrasad: boolean }>;
   initials: string;
   avatarColor: string;
+  email: string;
+  password: string;
+  imageUrl: string;
 }
 
 export default function AdminScreen() {
@@ -63,12 +66,34 @@ export default function AdminScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'bookings' | 'pandits'>('orders');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'bookings' | 'pandits'>('dashboard');
+  const [bookingSearch, setBookingSearch] = useState('');
 
   // React Query queries
   const { data: bookings = [], isLoading: loadingBookings } = useGetBookings();
   const { data: orders = [], isLoading: loadingOrders } = useGetOrders();
   const { data: pandits = [], isLoading: loadingPandits } = useGetPandits();
+
+  // Metrics
+  const totalBookingsRevenue = bookings
+    .filter(b => b.status !== 'cancelled')
+    .reduce((sum, b) => sum + (b.amount || 0), 0);
+  const totalOrdersRevenue = orders
+    .filter(o => o.status !== 'cancelled')
+    .reduce((sum, o) => sum + (o.amount || 0), 0);
+  const totalRevenue = totalBookingsRevenue + totalOrdersRevenue;
+
+  const totalBookingsCount = bookings.filter(b => b.status !== 'cancelled').length;
+  const totalOrdersCount = orders.filter(o => o.status !== 'cancelled').length;
+
+  const filteredBookingsLogs = bookings.filter(b => {
+    const query = bookingSearch.toLowerCase();
+    return (
+      b.bookingId.toLowerCase().includes(query) ||
+      b.panditName.toLowerCase().includes(query) ||
+      b.poojaName.toLowerCase().includes(query)
+    );
+  });
 
   // Mutations
   const updateBookingStatusMutation = useUpdateBookingStatus();
@@ -96,6 +121,9 @@ export default function AdminScreen() {
     poojas: [],
     initials: '',
     avatarColor: '#7B4F2E',
+    email: '',
+    password: '',
+    imageUrl: '',
   });
 
   const [specInput, setSpecInput] = useState('');
@@ -107,6 +135,8 @@ export default function AdminScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const maxBar = Math.max(...BAR_DATA);
+  const [resettingPasswordId, setResettingPasswordId] = useState<number | null>(null);
+  const [resetLinkModal, setResetLinkModal] = useState<{ visible: boolean; link: string; email: string }>({ visible: false, link: '', email: '' });
 
   // Status transitions
   const handleUpdateOrderStatus = async (id: number, status: string) => {
@@ -132,6 +162,31 @@ export default function AdminScreen() {
       await queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleForgotPassword = async (email: string | undefined, id: number) => {
+    if (!email) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setResettingPasswordId(id);
+    try {
+      // Mocking the backend call or pointing to api server (port 5000)
+      const res = await fetch('http://localhost:5000/api/pandits/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResetLinkModal({ visible: true, link: data.resetLink, email });
+      } else {
+        alert(data.message || 'Failed to generate link');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error connecting to server');
+    } finally {
+      setResettingPasswordId(null);
     }
   };
 
@@ -238,6 +293,9 @@ export default function AdminScreen() {
       ],
       initials: '',
       avatarColor: '#7B4F2E',
+      email: '',
+      password: '',
+      imageUrl: '',
     });
     setPincode('');
     setFormError('');
@@ -264,6 +322,9 @@ export default function AdminScreen() {
       poojas: p.poojas || [],
       initials: p.initials,
       avatarColor: p.avatarColor,
+      email: p.email || '',
+      password: '', // Do not populate password for editing, or leave blank if we don't want to change
+      imageUrl: p.imageUrl || '',
     });
     setPincode('');
     setFormError('');
@@ -277,6 +338,14 @@ export default function AdminScreen() {
 
     if (!panditForm.name.trim()) {
       setFormError('Pandit name is required');
+      return;
+    }
+    if (!panditForm.email?.trim()) {
+      setFormError('Email is required');
+      return;
+    }
+    if (!panditForm.id && !panditForm.password?.trim()) {
+      setFormError('Password is required for new Pandits');
       return;
     }
     if (!panditForm.specialty.trim()) {
@@ -387,7 +456,7 @@ export default function AdminScreen() {
 
       {/* Navigation tabs */}
       <View style={styles.tabRow}>
-        {(['orders', 'bookings', 'pandits'] as const).map(tab => (
+        {(['dashboard', 'orders', 'bookings', 'pandits'] as const).map(tab => (
           <Pressable
             key={tab}
             style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
@@ -409,6 +478,98 @@ export default function AdminScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding + 40 }}
       >
+        {activeTab === 'dashboard' && (
+          <View style={styles.tabContent}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Business Dashboard & Metrics</Text>
+            
+            {/* Extended Analytics Cards */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Feather name="trending-up" size={14} color={colors.gold} />
+                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>TOTAL REVENUE</Text>
+                </View>
+                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>₹{totalRevenue.toLocaleString('en-IN')}</Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Bookings + Store Sales</Text>
+              </View>
+
+              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Feather name="calendar" size={14} color={colors.gold} />
+                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>TOTAL BOOKINGS</Text>
+                </View>
+                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>{totalBookingsCount}</Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Completed & Upcoming</Text>
+              </View>
+
+              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Feather name="shopping-bag" size={14} color={colors.gold} />
+                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>SAMAGRI ORDERS</Text>
+                </View>
+                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>{totalOrdersCount}</Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Store Shipments</Text>
+              </View>
+
+              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Feather name="users" size={14} color={colors.gold} />
+                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>ACTIVE PANDITS</Text>
+                </View>
+                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>{pandits.length}</Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Onboarded profiles</Text>
+              </View>
+            </View>
+
+            {/* Booking Logs */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 8 }]}>Booking Audit Logs</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10, height: 44 }}>
+                <Feather name="search" size={16} color={colors.mutedForeground} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={{ flex: 1, color: colors.text, fontSize: 14, fontFamily: 'Inter_400Regular' }}
+                  placeholder="Search Booking ID or Pandit name..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bookingSearch}
+                  onChangeText={setBookingSearch}
+                />
+                {bookingSearch.length > 0 && (
+                  <Pressable onPress={() => setBookingSearch('')}>
+                    <Feather name="x" size={16} color={colors.mutedForeground} />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            {loadingBookings ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : filteredBookingsLogs.length === 0 ? (
+              <Text style={{ color: colors.mutedForeground, textAlign: 'center', marginVertical: 20 }}>No matching bookings found.</Text>
+            ) : (
+              filteredBookingsLogs.map(b => (
+                <View key={b.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.cardHeader}>
+                    <View>
+                      <Text style={[styles.orderId, { color: colors.text }]}>Booking #{b.bookingId}</Text>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 2 }}>{new Date(b.createdAt).toLocaleString()}</Text>
+                    </View>
+                    <View style={{ backgroundColor: b.status === 'completed' ? colors.success + '15' : b.status === 'cancelled' ? colors.destructive + '15' : colors.primary + '15', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                      <Text style={{ color: b.status === 'completed' ? colors.success : b.status === 'cancelled' ? colors.destructive : colors.primary, fontSize: 10, fontFamily: 'Inter_700Bold' }}>{b.status.toUpperCase()}</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={{ marginTop: 8 }}>
+                    <Text style={{ color: colors.text, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>{b.poojaName}</Text>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>Pandit: {b.panditName}</Text>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Schedule: {b.date} at {b.time}</Text>
+                    <Text style={{ color: colors.primary, fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 4 }}>Amount: ₹{b.amount.toLocaleString('en-IN')}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         {activeTab === 'orders' && (
           <View style={styles.tabContent}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Orders ({orders.length})</Text>
@@ -540,6 +701,17 @@ export default function AdminScreen() {
                       <Text style={styles.actionBtnText}>Edit Details</Text>
                     </Pressable>
                     <Pressable
+                      style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => handleForgotPassword(p.email, p.id)}
+                      disabled={resettingPasswordId === p.id || !p.email}
+                    >
+                      {resettingPasswordId === p.id ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.actionBtnText}>Reset Pwd</Text>
+                      )}
+                    </Pressable>
+                    <Pressable
                       style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
                       onPress={() => handleDeletePandit(p.id)}
                     >
@@ -592,6 +764,57 @@ export default function AdminScreen() {
                   value={panditForm.name}
                   onChangeText={val => setPanditForm(prev => ({ ...prev, name: val }))}
                 />
+              </View>
+
+              {/* Email & Password */}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>EMAIL ADDRESS</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. pandit@sankalp.com"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={panditForm.email}
+                  onChangeText={val => setPanditForm(prev => ({ ...prev, email: val }))}
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>PASSWORD</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder={panditForm.id ? "Leave blank to keep unchanged" : "Set login password"}
+                  placeholderTextColor={colors.mutedForeground}
+                  secureTextEntry
+                  value={panditForm.password}
+                  onChangeText={val => setPanditForm(prev => ({ ...prev, password: val }))}
+                />
+              </View>
+
+              {/* Avatar Selector (Presets) */}
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>PROFILE PHOTO</Text>
+              <View style={styles.categoryRow}>
+                {[1, 2, 3, 4].map(preset => {
+                  const url = `https://randomuser.me/api/portraits/men/${preset * 15}.jpg`;
+                  return (
+                    <Pressable
+                      key={preset}
+                      onPress={() => setPanditForm(prev => ({ ...prev, imageUrl: url }))}
+                      style={[
+                        styles.categoryTab,
+                        {
+                          borderColor: panditForm.imageUrl === url ? colors.primary : colors.border,
+                          backgroundColor: panditForm.imageUrl === url ? colors.primary + '12' : colors.card,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.categoryTabText, { color: panditForm.imageUrl === url ? colors.primary : colors.text }]}>
+                        Preset {preset}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
 
               {/* Specialty */}
@@ -767,6 +990,29 @@ export default function AdminScreen() {
                 )}
               </Pressable>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Forgot Password Link Modal */}
+      <Modal visible={resetLinkModal.visible} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background, margin: 20, borderRadius: 16, padding: 20 }]}>
+            <Text style={{ fontSize: 18, fontFamily: 'Inter_700Bold', color: colors.text, marginBottom: 10 }}>Password Reset Link</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'Inter_400Regular', color: colors.mutedForeground, marginBottom: 16 }}>
+              A simulated password reset email would be sent to: {resetLinkModal.email}
+            </Text>
+            <View style={{ backgroundColor: colors.secondary, padding: 12, borderRadius: 8, marginBottom: 20 }}>
+              <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: colors.primary }}>
+                {resetLinkModal.link}
+              </Text>
+            </View>
+            <Pressable
+              style={{ backgroundColor: colors.primary, paddingVertical: 12, borderRadius: 8, alignItems: 'center' }}
+              onPress={() => setResetLinkModal({ visible: false, link: '', email: '' })}
+            >
+              <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold', fontSize: 14 }}>Close</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>

@@ -69,7 +69,16 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: topPadding + 12, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/profile');
+            }
+          }}
+          style={styles.backBtn}
+        >
           <Feather name="arrow-left" size={22} color={colors.primary} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Settings</Text>

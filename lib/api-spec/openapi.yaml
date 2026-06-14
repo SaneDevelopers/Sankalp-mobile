@@ -415,27 +415,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                email:
-                  type: string
-              required:
-                - email
+              $ref: "#/components/schemas/ForgotPasswordInput"
       responses:
         "200":
           description: Password reset link generated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  resetLink:
-                    type: string
-                required:
-                  - success
-                  - resetLink
+                $ref: "#/components/schemas/ForgotPasswordResponse"
         "444":
           description: Pandit not found
   /pandits/{id}:
@@ -1002,4 +989,23 @@ components:
         - avatarColor
         - email
         - password
+
+    ForgotPasswordInput:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+
+    ForgotPasswordResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        resetLink:
+          type: string
+      required:
+        - success
+        - resetLink
 

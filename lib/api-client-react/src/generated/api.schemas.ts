@@ -203,17 +203,17 @@ export interface PanditInput {
   imageUrl?: string;
 }
 
-export type DeleteAddress200 = {
-  success: boolean;
-};
-
-export type PanditsForgotPasswordBody = {
+export interface ForgotPasswordInput {
   email: string;
-};
+}
 
-export type PanditsForgotPassword200 = {
+export interface ForgotPasswordResponse {
   success: boolean;
   resetLink: string;
+}
+
+export type DeleteAddress200 = {
+  success: boolean;
 };
 
 export type DeletePandit200 = {

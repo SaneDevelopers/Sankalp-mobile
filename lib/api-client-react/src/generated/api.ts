@@ -28,14 +28,14 @@ import type {
   DeleteAddress200,
   DeletePandit200,
   ErrorResponse,
+  ForgotPasswordInput,
+  ForgotPasswordResponse,
   HealthStatus,
   LoginInput,
   Order,
   OrderInput,
   Pandit,
   PanditInput,
-  PanditsForgotPassword200,
-  PanditsForgotPasswordBody,
   RegisterInput,
   StatusUpdateInput,
   UpdateProfileInput,
@@ -1392,15 +1392,15 @@ export const getPanditsForgotPasswordUrl = () => {
 /**
  * @summary Request forgot password reset link for a Pandit
  */
-export const panditsForgotPassword = async (panditsForgotPasswordBody: PanditsForgotPasswordBody, options?: RequestInit): Promise<PanditsForgotPassword200> => {
+export const panditsForgotPassword = async (forgotPasswordInput: ForgotPasswordInput, options?: RequestInit): Promise<ForgotPasswordResponse> => {
 
-  return customFetch<PanditsForgotPassword200>(getPanditsForgotPasswordUrl(),
+  return customFetch<ForgotPasswordResponse>(getPanditsForgotPasswordUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      panditsForgotPasswordBody,)
+      forgotPasswordInput,)
   }
 );}
 
@@ -1408,8 +1408,8 @@ export const panditsForgotPassword = async (panditsForgotPasswordBody: PanditsFo
 
 
 export const getPanditsForgotPasswordMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof panditsForgotPassword>>, TError,{data: BodyType<PanditsForgotPasswordBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof panditsForgotPassword>>, TError,{data: BodyType<PanditsForgotPasswordBody>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof panditsForgotPassword>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof panditsForgotPassword>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext> => {
 
 const mutationKey = ['panditsForgotPassword'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1421,7 +1421,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof panditsForgotPassword>>, {data: BodyType<PanditsForgotPasswordBody>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof panditsForgotPassword>>, {data: BodyType<ForgotPasswordInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  panditsForgotPassword(data,requestOptions)
@@ -1435,18 +1435,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PanditsForgotPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof panditsForgotPassword>>>
-    export type PanditsForgotPasswordMutationBody = BodyType<PanditsForgotPasswordBody>
+    export type PanditsForgotPasswordMutationBody = BodyType<ForgotPasswordInput>
     export type PanditsForgotPasswordMutationError = ErrorType<void>
 
     /**
  * @summary Request forgot password reset link for a Pandit
  */
 export const usePanditsForgotPassword = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof panditsForgotPassword>>, TError,{data: BodyType<PanditsForgotPasswordBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof panditsForgotPassword>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof panditsForgotPassword>>,
         TError,
-        {data: BodyType<PanditsForgotPasswordBody>},
+        {data: BodyType<ForgotPasswordInput>},
         TContext
       > => {
       return useMutation(getPanditsForgotPasswordMutationOptions(options));
