@@ -119,7 +119,7 @@ const T = {
   }
 };
 
-const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
+const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 70 : 52;
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -186,9 +186,14 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 20 }}
       >
         {/* Header */}
-        <View style={[styles.header, { paddingTop: topPadding + 16 }]}>
+        <View style={[styles.header, { paddingTop: topPadding + 4 }]}>
           <View style={{ flex: 1, marginRight: 8 }}>
             <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('namaste')}, {displayName}</Text>
+            {/* Location Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+              <Feather name="map-pin" size={11} color={colors.primary} />
+              <Text style={{ fontSize: 11, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>Lucknow, Uttar Pradesh</Text>
+            </View>
             <Text style={[styles.title, { color: colors.primary, fontFamily: f('bold') }]} numberOfLines={2} adjustsFontSizeToFit>
               {t('titleLine1')}{'\n'}{t('titleLine2')}
             </Text>

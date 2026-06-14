@@ -55,9 +55,9 @@ function ClassicTabLayout() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          height: isWeb ? 84 : 60,
-          paddingBottom: isWeb ? 16 : 8,
-          paddingTop: 8,
+          height: isWeb ? 70 : 52,
+          paddingBottom: isWeb ? 10 : 6,
+          paddingTop: 14,
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter_500Medium',
@@ -81,9 +81,9 @@ function ClassicTabLayout() {
           title: "Home",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={22} />
+              <SymbolView name="house" tintColor={color} size={18} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="home" size={18} color={color} />
             ),
         }}
       />
@@ -93,9 +93,9 @@ function ClassicTabLayout() {
           title: "Pandits",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="person.2" tintColor={color} size={22} />
+              <SymbolView name="person.2" tintColor={color} size={18} />
             ) : (
-              <Feather name="users" size={22} color={color} />
+              <Feather name="users" size={18} color={color} />
             ),
         }}
       />
@@ -105,9 +105,9 @@ function ClassicTabLayout() {
           title: "Store",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="bag" tintColor={color} size={22} />
+              <SymbolView name="bag" tintColor={color} size={18} />
             ) : (
-              <Feather name="shopping-bag" size={22} color={color} />
+              <Feather name="shopping-bag" size={18} color={color} />
             ),
         }}
       />
@@ -117,9 +117,9 @@ function ClassicTabLayout() {
           title: "Bookings",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="calendar" tintColor={color} size={22} />
+              <SymbolView name="calendar" tintColor={color} size={18} />
             ) : (
-              <Feather name="calendar" size={22} color={color} />
+              <Feather name="calendar" size={18} color={color} />
             ),
         }}
       />
@@ -129,9 +129,9 @@ function ClassicTabLayout() {
           title: "Profile",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="person.circle" tintColor={color} size={22} />
+              <SymbolView name="person.circle" tintColor={color} size={18} />
             ) : (
-              <Feather name="user" size={22} color={color} />
+              <Feather name="user" size={18} color={color} />
             ),
         }}
       />
