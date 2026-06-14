@@ -1037,12 +1037,12 @@ export default function AdminScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   adminHeader: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 8,
     paddingBottom: 20,
   },
   headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'flex-start',
     marginBottom: 16,
   },
