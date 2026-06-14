@@ -1,8 +1,10 @@
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,15 +17,48 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import { useAuthLogin } from '@workspace/api-client-react';
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
+
+  const loginMutation = useAuthLogin();
+
+  const handleLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+
+    if (!identifier.trim()) {
+      setError('Please enter your email or phone number');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
+
+    try {
+      const result = await loginMutation.mutateAsync({
+        data: {
+          identifier: identifier.trim(),
+          password,
+        },
+      });
+
+      await AsyncStorage.setItem('auth_token', result.token);
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Invalid credentials';
+      setError(message);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -47,20 +82,27 @@ export default function LoginScreen() {
         <Text style={[styles.heading, { color: colors.text }]}>Welcome back</Text>
         <Text style={[styles.sub, { color: colors.mutedForeground }]}>Sign in to continue your spiritual journey</Text>
 
-        {/* Phone */}
+        {/* Error */}
+        {error ? (
+          <View style={[styles.errorBox, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
+            <Feather name="alert-circle" size={16} color="#DC2626" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Email or Phone */}
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>PHONE NUMBER</Text>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>EMAIL OR PHONE NUMBER</Text>
           <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.prefix, { color: colors.mutedForeground }]}>+91</Text>
-            <View style={[styles.prefixDiv, { backgroundColor: colors.border }]} />
+            <Feather name="user" size={18} color={colors.mutedForeground} />
             <TextInput
               style={[styles.input, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
-              placeholder="98765 43210"
+              placeholder="Email or phone number"
               placeholderTextColor={colors.mutedForeground}
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-              maxLength={10}
+              keyboardType="default"
+              autoCapitalize="none"
+              value={identifier}
+              onChangeText={setIdentifier}
             />
           </View>
         </View>
@@ -90,13 +132,15 @@ export default function LoginScreen() {
 
         {/* Login Button */}
         <Pressable
-          style={[styles.loginBtn, { backgroundColor: colors.primary }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.replace('/(tabs)');
-          }}
+          style={[styles.loginBtn, { backgroundColor: colors.primary, opacity: loginMutation.isPending ? 0.7 : 1 }]}
+          onPress={handleLogin}
+          disabled={loginMutation.isPending}
         >
-          <Text style={styles.loginBtnText}>SIGN IN</Text>
+          {loginMutation.isPending ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.loginBtnText}>SIGN IN</Text>
+          )}
         </Pressable>
 
         {/* Divider */}
@@ -148,14 +192,17 @@ const styles = StyleSheet.create({
   appSub: { fontSize: 14, fontFamily: 'Inter_400Regular', letterSpacing: 2 },
   heading: { fontSize: 26, fontFamily: 'Inter_700Bold', marginBottom: 6 },
   sub: { fontSize: 14, fontFamily: 'Inter_400Regular', marginBottom: 28, lineHeight: 20 },
+  errorBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10,
+    borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16,
+  },
+  errorText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: '#DC2626', flex: 1 },
   fieldGroup: { marginBottom: 16 },
   label: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.5, marginBottom: 8 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center', borderRadius: 12,
     borderWidth: 1, paddingHorizontal: 14, paddingVertical: 14, gap: 10,
   },
-  prefix: { fontSize: 15, fontFamily: 'Inter_500Medium' },
-  prefixDiv: { width: 1, height: 20 },
   input: { flex: 1, fontSize: 15, padding: 0 },
   forgotRow: { alignSelf: 'flex-end', marginBottom: 24 },
   forgotText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },

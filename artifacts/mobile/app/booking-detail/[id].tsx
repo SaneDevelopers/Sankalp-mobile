@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BOOKINGS } from '@/constants/data';
 import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
+import { useAuthMe, useGetBookings, getGetBookingsQueryKey } from '@workspace/api-client-react';
 
 const STATUS_STEPS = [
   { key: 'booked', label: 'Booking Confirmed', icon: 'check-circle' },
@@ -30,7 +31,17 @@ export default function BookingDetailScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const booking = BOOKINGS.find(b => b.id === id) ?? BOOKINGS[0];
+  const { data: user } = useAuthMe();
+  const { data: apiBookings = [] } = useGetBookings({
+    query: {
+      enabled: !!user,
+      queryKey: getGetBookingsQueryKey(),
+    },
+  });
+
+  const booking = user
+    ? (apiBookings.find(b => b.id.toString() === id || b.bookingId === id) ?? apiBookings[0] ?? BOOKINGS[0])
+    : (BOOKINGS.find(b => b.id === id) ?? BOOKINGS[0]);
 
   const getStatusStyle = () => {
     if (booking.status === 'upcoming') return { color: colors.upcoming, bg: colors.upcoming + '15', label: 'UPCOMING' };
@@ -39,7 +50,9 @@ export default function BookingDetailScreen() {
   };
 
   const statusStyle = getStatusStyle();
-  const panditImgId = booking.panditInitials === 'VS' ? '1' : booking.panditInitials === 'KN' ? '2' : booking.panditInitials === 'RJ' ? '3' : '4';
+  const bookingObj = booking as any;
+  const panditImgId = bookingObj.panditId ? bookingObj.panditId.toString() : (bookingObj.panditInitials === 'VS' ? '1' : bookingObj.panditInitials === 'KN' ? '2' : bookingObj.panditInitials === 'RJ' ? '3' : '4');
+  const imageSource = PANDIT_IMAGES[panditImgId] ?? PANDIT_IMAGES['1'];
   const completedSteps = booking.status === 'completed' ? 3 : booking.status === 'upcoming' ? 2 : 0;
 
   return (
@@ -65,7 +78,7 @@ export default function BookingDetailScreen() {
 
           {/* Pandit Info */}
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Image source={PANDIT_IMAGES[panditImgId]} style={styles.panditPhoto} resizeMode="cover" />
+            <Image source={imageSource} style={styles.panditPhoto} resizeMode="cover" />
             <View style={styles.panditInfo}>
               <Text style={[styles.panditName, { color: colors.text }]}>{booking.panditName}</Text>
               <Text style={[styles.poojaName, { color: colors.primary }]}>{booking.poojaName}</Text>

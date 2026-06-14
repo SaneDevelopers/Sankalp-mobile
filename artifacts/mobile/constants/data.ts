@@ -320,3 +320,38 @@ export const DATES = [
   { day: 'THU', date: 17, month: 'Oct' },
   { day: 'FRI', date: 18, month: 'Oct' },
 ];
+
+export const LOCAL_PINCODES: Record<string, string> = {
+  "201301": "Noida",
+  "201305": "Noida",
+  "201308": "Greater Noida",
+  "221001": "Varanasi",
+  "221002": "Varanasi",
+  "224123": "Ayodhya",
+  "281001": "Mathura",
+  "281121": "Vrindavan",
+  "211001": "Prayagraj",
+  "226001": "Lucknow",
+  "226010": "Lucknow",
+  "273001": "Gorakhpur",
+  "208001": "Kanpur",
+  "282001": "Agra"
+};
+
+export const validatePincodeOffline = (pin: string) => {
+  if (pin.length !== 6 || !/^\d+$/.test(pin)) return null;
+  const prefix = pin.substring(0, 2);
+  const prefixInt = parseInt(prefix, 10);
+  if (prefixInt >= 20 && prefixInt <= 28) {
+    if (LOCAL_PINCODES[pin]) return LOCAL_PINCODES[pin];
+    if (prefix === '20') return 'Noida/Western UP';
+    if (prefix === '21') return 'Prayagraj/Southern UP';
+    if (prefix === '22') return 'Lucknow/Central UP';
+    if (prefix === '23') return 'Mirzapur/Varanasi region';
+    if (prefix === '24') return 'Bareilly/Northern UP';
+    if (prefix === '25') return 'Meerut/Western UP';
+    return 'Uttar Pradesh';
+  }
+  return null;
+};
+

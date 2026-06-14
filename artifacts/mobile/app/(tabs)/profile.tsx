@@ -13,6 +13,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import {
+  useAuthMe,
+  useGetBookings,
+  getGetBookingsQueryKey,
+  useGetOrders,
+  getGetOrdersQueryKey,
+} from '@workspace/api-client-react';
+import { useNavigation } from 'expo-router';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 
@@ -31,6 +39,63 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const navigation = useNavigation();
+
+  const { data: user } = useAuthMe();
+  const { data: bookings = [], refetch: refetchBookings } = useGetBookings({
+    query: {
+      enabled: !!user,
+      queryKey: getGetBookingsQueryKey(),
+    },
+  });
+
+  const { data: orders = [], refetch: refetchOrders } = useGetOrders({
+    query: {
+      enabled: !!user,
+      queryKey: getGetOrdersQueryKey(),
+    },
+  });
+
+  React.useEffect(() => {
+    if (user) {
+      refetchBookings();
+      refetchOrders();
+    }
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (user) {
+        refetchBookings();
+        refetchOrders();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, user]);
+
+  const displayName = user?.name || "Guest Devotee";
+  const displayContact = user?.phone || user?.email || "Sign in to sync your profile";
+  const avatarLetter = displayName[0].toUpperCase();
+
+  const statsBookings = user ? bookings.length.toString() : "12";
+
+  let totalSpent = 0;
+  if (user) {
+    bookings.forEach(b => {
+      if (b.status === 'completed' || b.status === 'upcoming') {
+        totalSpent += b.amount;
+      }
+    });
+    orders.forEach(o => {
+      if (o.status === 'delivered' || o.status === 'processing' || o.status === 'in_transit') {
+        totalSpent += o.amount;
+      }
+    });
+  }
+  const statsSpent = user ? `₹${totalSpent.toLocaleString('en-IN')}` : "₹24K";
+
+  let statsPandits = "8";
+  if (user) {
+    const uniquePandits = new Set(bookings.map(b => b.panditId));
+    statsPandits = uniquePandits.size.toString();
+  }
 
   return (
     <ScrollView
@@ -45,27 +110,27 @@ export default function ProfileScreen() {
         </View>
         <View style={[styles.avatarRing, { borderColor: colors.gold }]}>
           <View style={[styles.avatar, { backgroundColor: colors.orange }]}>
-            <Text style={styles.avatarText}>A</Text>
+            <Text style={styles.avatarText}>{avatarLetter}</Text>
           </View>
         </View>
         <Text style={styles.devoteeLabel}>DEVOTEE</Text>
-        <Text style={styles.name}>Arnav Sharma</Text>
-        <Text style={styles.phone}>+91 98XXX XXX12</Text>
+        <Text style={styles.name}>{displayName}</Text>
+        <Text style={styles.phone}>{displayContact}</Text>
 
         {/* Stats */}
         <View style={[styles.statsRow, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{statsBookings}</Text>
             <Text style={styles.statLabel}>BOOKINGS</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>₹24K</Text>
+            <Text style={styles.statValue}>{statsSpent}</Text>
             <Text style={styles.statLabel}>SPENT</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>8</Text>
+            <Text style={styles.statValue}>{statsPandits}</Text>
             <Text style={styles.statLabel}>PANDITS</Text>
           </View>
         </View>

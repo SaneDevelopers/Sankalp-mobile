@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,23 +16,118 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import { useAuthMe, useAuthUpdateProfile } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { validatePincodeOffline } from '@/constants/data';
 
 export default function EditProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [name, setName] = useState('Arnav Sharma');
-  const [phone, setPhone] = useState('+91 98XXX XXX12');
-  const [email, setEmail] = useState('arnav.sharma@gmail.com');
-  const [city, setCity] = useState('Delhi NCR');
+  const queryClient = useQueryClient();
+
+  const { data: user } = useAuthMe();
+  const updateProfileMutation = useAuthUpdateProfile();
+
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [resolvingPin, setResolvingPin] = useState(false);
+  const [error, setError] = useState('');
+
+  React.useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setPhone(user.phone || '');
+      setEmail(user.email || '');
+      setCity(user.city || '');
+    }
+  }, [user]);
+
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const fields = [
-    { label: 'FULL NAME', icon: 'user', value: name, setter: setName, keyboard: 'default' as const },
-    { label: 'PHONE NUMBER', icon: 'phone', value: phone, setter: setPhone, keyboard: 'phone-pad' as const },
-    { label: 'EMAIL ADDRESS', icon: 'mail', value: email, setter: setEmail, keyboard: 'email-address' as const },
-    { label: 'CITY', icon: 'map-pin', value: city, setter: setCity, keyboard: 'default' as const },
-  ];
+  const handlePincodeChange = async (pin: string) => {
+    const cleanPin = pin.replace(/[^0-9]/g, '');
+    setPincode(cleanPin);
+    if (cleanPin.length < 6) {
+      setCity('');
+      setError('');
+      return;
+    }
+
+    setError('');
+    setResolvingPin(true);
+
+    const offlineCity = validatePincodeOffline(cleanPin);
+    if (!offlineCity) {
+      setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+      setCity('');
+      setResolvingPin(false);
+      return;
+    }
+
+    setCity(offlineCity);
+
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`);
+      const data = await res.json();
+      if (data && data[0] && data[0].Status === 'Success') {
+        const postOffices = data[0].PostOffice;
+        if (postOffices && postOffices.length > 0) {
+          const state = postOffices[0].State;
+          const district = postOffices[0].District;
+          if (state === 'Uttar Pradesh') {
+            setCity(district);
+            setError('');
+          } else {
+            setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+            setCity('');
+          }
+        }
+      }
+    } catch (err) {
+      // Quietly keep offline fallback
+    } finally {
+      setResolvingPin(false);
+    }
+  };
+
+  const handleSave = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+
+    if (!name.trim()) {
+      setError('Name is required');
+      return;
+    }
+
+    if (!city) {
+      setError('Please enter a valid Uttar Pradesh pincode');
+      return;
+    }
+
+    try {
+      await updateProfileMutation.mutateAsync({
+        data: {
+          name: name.trim(),
+          email: email.trim() || undefined,
+          phone: phone.trim() || undefined,
+          city: city.trim() || undefined,
+        },
+      });
+
+      // Invalidate query to trigger profile re-fetching
+      queryClient.invalidateQueries({ queryKey: [`/api/auth/me`] });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch (err: any) {
+      const msg = err?.data?.message || err?.message || 'Failed to update profile';
+      setError(msg);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -56,7 +152,7 @@ export default function EditProfileScreen() {
         <View style={styles.avatarSection}>
           <View style={[styles.avatarRing, { borderColor: colors.gold }]}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.avatarText}>A</Text>
+              <Text style={styles.avatarText}>{name ? name[0].toUpperCase() : 'A'}</Text>
             </View>
             <Pressable style={[styles.cameraBtn, { backgroundColor: colors.orange }]}>
               <Feather name="camera" size={14} color="#FFFFFF" />
@@ -65,21 +161,83 @@ export default function EditProfileScreen() {
           <Text style={[styles.changePhotoText, { color: colors.accent }]}>Tap to change photo</Text>
         </View>
 
+        {/* Error */}
+        {error ? (
+          <View style={[styles.errorBox, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
+            <Feather name="alert-circle" size={16} color="#DC2626" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
         {/* Fields */}
-        {fields.map(f => (
-          <View key={f.label} style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.mutedForeground }]}>{f.label}</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Feather name={f.icon as any} size={18} color={colors.mutedForeground} />
-              <TextInput
-                style={[styles.input, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
-                value={f.value}
-                onChangeText={f.setter}
-                keyboardType={f.keyboard}
-              />
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>FULL NAME</Text>
+          <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="user" size={18} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.input, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>PHONE NUMBER</Text>
+          <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="phone" size={18} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.input, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>EMAIL ADDRESS</Text>
+          <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="mail" size={18} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.input, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (UTTAR PRADESH ONLY)</Text>
+          <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="hash" size={18} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.input, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
+              value={pincode}
+              onChangeText={handlePincodeChange}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="Enter 6-digit Pincode"
+              placeholderTextColor={colors.mutedForeground}
+            />
+            {resolvingPin && <ActivityIndicator size="small" color={colors.primary} />}
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>RESOLVED CITY</Text>
+          <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Feather name="map-pin" size={18} color={colors.mutedForeground} />
+            <Text style={[styles.readOnlyText, { color: city ? colors.text : colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+              {city || 'Enter pincode to resolve location'}
+            </Text>
+            <View style={[styles.lockedBadge, { backgroundColor: colors.border }]}>
+              <Feather name="lock" size={10} color={colors.mutedForeground} />
             </View>
           </View>
-        ))}
+        </View>
 
         {/* Devotee ID (read-only) */}
         <View style={styles.fieldGroup}>
@@ -87,7 +245,7 @@ export default function EditProfileScreen() {
           <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <Feather name="hash" size={18} color={colors.mutedForeground} />
             <Text style={[styles.readOnlyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              SKL-D-40291
+              {user?.id ? `SKL-D-${user.id}` : 'SKL-D-GUEST'}
             </Text>
             <View style={[styles.lockedBadge, { backgroundColor: colors.border }]}>
               <Feather name="lock" size={10} color={colors.mutedForeground} />
@@ -98,10 +256,7 @@ export default function EditProfileScreen() {
         {/* Save */}
         <Pressable
           style={[styles.saveBtn, { backgroundColor: colors.primary }]}
-          onPress={() => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.back();
-          }}
+          onPress={handleSave}
         >
           <Feather name="check" size={18} color="#FFFFFF" />
           <Text style={styles.saveBtnText}>SAVE CHANGES</Text>
@@ -147,4 +302,9 @@ const styles = StyleSheet.create({
     borderRadius: 14, paddingVertical: 17, gap: 10, marginTop: 8,
   },
   saveBtnText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 15, letterSpacing: 1 },
+  errorBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10,
+    borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16,
+  },
+  errorText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: '#DC2626', flex: 1 },
 });

@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PANDITS, POOJA_TYPES } from '@/constants/data';
 import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
+import { useGetPandits } from '@workspace/api-client-react';
 
 export default function PanditsByPoojaScreen() {
   const colors = useColors();
@@ -23,10 +24,13 @@ export default function PanditsByPoojaScreen() {
   const { poojaId, poojaName } = useLocalSearchParams<{ poojaId: string; poojaName: string }>();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
+  const { data: dbPandits = [] } = useGetPandits();
+  const panditsList = dbPandits.length > 0 ? dbPandits : PANDITS;
+
   const poojaType = POOJA_TYPES.find(p => p.id === poojaId);
   const pandits = poojaType
-    ? PANDITS.filter(p => poojaType.panditIds.includes(p.id))
-    : PANDITS;
+    ? panditsList.filter(p => poojaType.panditIds.map(String).includes(p.id.toString()))
+    : panditsList;
 
   const getAvailLabel = (available: string) => {
     if (available === 'today') return { label: 'AVAILABLE TODAY', color: colors.success };
@@ -68,7 +72,7 @@ export default function PanditsByPoojaScreen() {
 
       <FlatList
         data={pandits}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -92,7 +96,7 @@ export default function PanditsByPoojaScreen() {
                 router.push(`/pandit/${item.id}` as any);
               }}
             >
-              <Image source={PANDIT_IMAGES[item.id]} style={styles.avatar} resizeMode="cover" />
+              <Image source={PANDIT_IMAGES[item.id.toString()] ?? PANDIT_IMAGES['1']} style={styles.avatar} resizeMode="cover" />
               <View style={styles.info}>
                 <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                 <Text style={[styles.specialty, { color: colors.mutedForeground }]}>

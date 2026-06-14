@@ -211,7 +211,7 @@ export default function PoojaDetailScreen() {
                   <View style={styles.panditMeta}>
                     <Feather name="star" size={12} color={colors.gold} />
                     <Text style={[styles.panditRating, { color: colors.text }]}>{pandit.rating}</Text>
-                    <Text style={[styles.panditReviews, { color: colors.mutedForeground }]}>({pandit.reviews})</Text>
+                    <Text style={[styles.panditReviews, { color: colors.mutedForeground }]}>({pandit.bookings})</Text>
                     <Text style={[styles.panditCity, { color: colors.mutedForeground }]}>· {pandit.city}</Text>
                   </View>
                 </View>

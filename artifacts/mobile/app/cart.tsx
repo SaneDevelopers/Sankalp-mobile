@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FlatList,
   Platform,
@@ -9,21 +9,182 @@ import {
   StyleSheet,
   Text,
   View,
+  Modal,
+  ActivityIndicator,
+  ScrollView,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCart } from '@/context/CartContext';
 import { useColors } from '@/hooks/useColors';
+import { STORE_IMAGES } from '@/constants/images';
+import {
+  useGetAddresses,
+  getGetAddressesQueryKey,
+  useCreateOrder,
+  useAuthMe,
+} from '@workspace/api-client-react';
 
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { items, updateQuantity, removeItem, total } = useCart();
+  const { items, updateQuantity, removeItem, total, clearCart } = useCart();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const { data: user } = useAuthMe();
+  const { data: addresses = [], isLoading: loadingAddresses } = useGetAddresses({
+    query: {
+      enabled: !!user,
+      queryKey: getGetAddressesQueryKey(),
+    },
+  });
+
+  const createOrderMutation = useCreateOrder();
+
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [error, setError] = useState('');
+
+  // Auto-select default or first address
+  React.useEffect(() => {
+    if (addresses.length > 0 && selectedAddressId === null) {
+      const def = addresses.find(a => a.isDefault);
+      if (def) setSelectedAddressId(def.id);
+      else setSelectedAddressId(addresses[0].id);
+    }
+  }, [addresses]);
+
+  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+
   const delivery = total > 999 ? 0 : 99;
   const grandTotal = total + delivery;
+
+  const handleCheckout = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (addresses.length === 0) {
+      setError('Please add a delivery address first');
+      return;
+    }
+
+    if (!selectedAddress) {
+      setError('Please select a delivery address');
+      return;
+    }
+
+    setIsCheckingOut(true);
+
+    const addressText = `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`;
+
+    // Map cart items to OrderItem spec type
+    const orderItems = items.map(i => ({
+      name: i.name,
+      qty: i.quantity,
+      price: i.price,
+      unit: i.unit,
+    }));
+
+    try {
+      await createOrderMutation.mutateAsync({
+        data: {
+          items: orderItems,
+          amount: grandTotal,
+          delivery,
+          addressText,
+        },
+      });
+
+      clearCart();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push('/confirmed' as any);
+    } catch (err: any) {
+      setError(err?.data?.message || err?.message || 'Failed to place order');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const renderAddressSection = () => {
+    if (!user) {
+      return (
+        <Pressable
+          style={[styles.addressCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/login')}
+        >
+          <View style={[styles.addressIconWrap, { backgroundColor: colors.primary + '15' }]}>
+            <Feather name="lock" size={14} color={colors.primary} />
+          </View>
+          <View style={styles.addressInfo}>
+            <Text style={[styles.addressTitle, { color: colors.text }]}>Sign in to Select Address</Text>
+            <Text style={[styles.addressText, { color: colors.mutedForeground }]}>
+              Keep your order history tracked in your profile
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+        </Pressable>
+      );
+    }
+
+    if (loadingAddresses) {
+      return (
+        <View style={styles.addressLoading}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      );
+    }
+
+    if (addresses.length === 0) {
+      return (
+        <Pressable
+          style={[styles.addressCard, { backgroundColor: colors.card, borderColor: colors.primary, borderStyle: 'dashed' }]}
+          onPress={() => router.push('/addresses')}
+        >
+          <View style={[styles.addressIconWrap, { backgroundColor: colors.primary + '15' }]}>
+            <Feather name="plus" size={14} color={colors.primary} />
+          </View>
+          <View style={styles.addressInfo}>
+            <Text style={[styles.addressTitle, { color: colors.primary }]}>Add Delivery Address</Text>
+            <Text style={[styles.addressText, { color: colors.mutedForeground }]}>
+              You have no saved addresses. Tap to add one now.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+        </Pressable>
+      );
+    }
+
+    const addr = selectedAddress || addresses[0];
+    const iconName = addr.label.toLowerCase() === 'home' ? 'home' : addr.label.toLowerCase() === 'office' ? 'briefcase' : 'map-pin';
+
+    return (
+      <Pressable
+        style={[styles.addressCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={() => setAddressModalVisible(true)}
+      >
+        <View style={[styles.addressIconWrap, { backgroundColor: colors.primary + '15' }]}>
+          <Feather name={iconName as any} size={14} color={colors.primary} />
+        </View>
+        <View style={styles.addressInfo}>
+          <Text style={[styles.addressTitle, { color: colors.text }]}>
+            {addr.label} · {addr.name}
+          </Text>
+          <Text style={[styles.addressText, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {addr.address}, {addr.city} – {addr.pincode}
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+      </Pressable>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -36,6 +197,13 @@ export default function CartScreen() {
         <View style={{ width: 36 }} />
       </View>
 
+      {error ? (
+        <View style={[styles.errorContainer, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
+          <Feather name="alert-circle" size={16} color="#DC2626" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
+
       <FlatList
         data={items}
         keyExtractor={item => item.id}
@@ -46,16 +214,7 @@ export default function CartScreen() {
           <View style={{ marginTop: 20 }}>
             {/* Delivery Address */}
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DELIVERY ADDRESS</Text>
-            <Pressable style={[styles.addressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.addressIconWrap, { backgroundColor: colors.primary + '15' }]}>
-                <Feather name="home" size={14} color={colors.primary} />
-              </View>
-              <View style={styles.addressInfo}>
-                <Text style={[styles.addressTitle, { color: colors.text }]}>Home · Arnav Sharma</Text>
-                <Text style={[styles.addressText, { color: colors.mutedForeground }]}>A-301, Lotus Towers, Sector 62, Noida – 201301</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-            </Pressable>
+            {renderAddressSection()}
 
             {/* Price Summary */}
             <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -75,9 +234,11 @@ export default function CartScreen() {
         )}
         renderItem={({ item }) => (
           <View style={[styles.cartItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.itemIcon, { backgroundColor: colors.primary + '15' }]}>
-              <Feather name="package" size={20} color={colors.primary} />
-            </View>
+            <Image
+              source={STORE_IMAGES[item.id] || STORE_IMAGES['si1']}
+              style={styles.itemImage}
+              resizeMode="cover"
+            />
             <View style={styles.itemInfo}>
               <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={2}>{item.name}</Text>
               <Text style={[styles.itemUnit, { color: colors.mutedForeground }]}>{item.unit}</Text>
@@ -123,16 +284,89 @@ export default function CartScreen() {
         <View style={[styles.footer, { paddingBottom: bottomPadding + 16, backgroundColor: colors.background, borderTopColor: colors.border }]}>
           <Pressable
             style={[styles.payBtn, { backgroundColor: colors.primary }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('/confirmed' as any);
-            }}
+            onPress={handleCheckout}
+            disabled={isCheckingOut}
           >
-            <Feather name="lock" size={16} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.payBtnText}>Pay Securely · ₹{grandTotal.toLocaleString('en-IN')}</Text>
+            {isCheckingOut ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Feather name="lock" size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.payBtnText}>
+                  {!user ? 'Sign In to Pay' : `Pay Securely · ₹${grandTotal.toLocaleString('en-IN')}`}
+                </Text>
+              </>
+            )}
           </Pressable>
         </View>
       )}
+
+      {/* Address Picker Modal */}
+      <Modal visible={addressModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Select Delivery Address</Text>
+              <Pressable onPress={() => setAddressModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.addressListScroll}>
+              {addresses.map(addr => {
+                const isSelected = addr.id === selectedAddressId;
+                const iconName = addr.label.toLowerCase() === 'home' ? 'home' : addr.label.toLowerCase() === 'office' ? 'briefcase' : 'map-pin';
+                return (
+                  <Pressable
+                    key={addr.id}
+                    style={[
+                      styles.addressSelectItem,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedAddressId(addr.id);
+                      setAddressModalVisible(false);
+                      Haptics.selectionAsync();
+                    }}
+                  >
+                    <View style={[styles.addressIconWrap, { backgroundColor: colors.primary + '15' }]}>
+                      <Feather name={iconName as any} size={15} color={colors.primary} />
+                    </View>
+                    <View style={styles.addressSelectInfo}>
+                      <Text style={[styles.addressTitle, { color: colors.text }]}>
+                        {addr.label} · {addr.name}
+                      </Text>
+                      <Text style={[styles.addressText, { color: colors.mutedForeground }]}>
+                        {addr.address}, {addr.city} – {addr.pincode}
+                      </Text>
+                      <Text style={[styles.addressText, { color: colors.mutedForeground, marginTop: 4 }]}>
+                        Phone: {addr.phone}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Feather name="check-circle" size={18} color={colors.primary} style={styles.checkIcon} />
+                    )}
+                  </Pressable>
+                );
+              })}
+
+              <Pressable
+                style={[styles.manageAddressBtn, { borderColor: colors.primary, backgroundColor: colors.primary + '08' }]}
+                onPress={() => {
+                  setAddressModalVisible(false);
+                  router.push('/addresses');
+                }}
+              >
+                <Feather name="settings" size={16} color={colors.primary} />
+                <Text style={[styles.manageAddressText, { color: colors.primary }]}>Manage Saved Addresses</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -163,6 +397,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  itemImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
   },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
@@ -203,6 +442,7 @@ const styles = StyleSheet.create({
   addressInfo: { flex: 1 },
   addressTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   addressText: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  addressLoading: { paddingVertical: 20, alignItems: 'center' },
   summaryCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -246,4 +486,59 @@ const styles = StyleSheet.create({
   },
   emptyText: { fontSize: 16, fontFamily: 'Inter_500Medium' },
   shopLink: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginHorizontal: 20,
+    marginTop: 10,
+  },
+  errorText: { fontSize: 13, color: '#DC2626', fontFamily: 'Inter_500Medium', flex: 1 },
+
+  // Modal selector styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  modalTitle: { fontSize: 18, fontFamily: 'Inter_700Bold' },
+  closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  addressListScroll: { padding: 20, gap: 12, paddingBottom: 40 },
+  addressSelectItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    gap: 12,
+  },
+  addressSelectInfo: { flex: 1 },
+  checkIcon: { marginLeft: 8 },
+  manageAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    marginTop: 8,
+  },
+  manageAddressText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
 });

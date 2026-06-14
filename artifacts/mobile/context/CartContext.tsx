@@ -21,11 +21,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([
-    { id: 'si2', name: 'Brass Pooja Thali', price: 1299, quantity: 1, unit: 'Set of 7 items' },
-    { id: 'si3', name: 'Sandalwood Agarbatti', price: 249, quantity: 2, unit: 'Pack of 40 sticks' },
-    { id: 'si4', name: 'Rudraksh Mala', price: 899, quantity: 1, unit: '108 beads · 5 Mukhi' },
-  ]);
+  const [items, setItems] = useState<CartItem[]>([]);
 
   const addItem = (item: Omit<CartItem, 'quantity'>) => {
     setItems(prev => {

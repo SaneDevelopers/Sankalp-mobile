@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PANDITS, Pandit } from '@/constants/data';
 import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
+import { useGetPandits } from '@workspace/api-client-react';
 
 const FILTERS = ['ALL', 'VEDIC', 'ASTROLOGY', 'HAVAN'];
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
@@ -26,13 +27,16 @@ export default function PanditsScreen() {
   const [activeFilter, setActiveFilter] = useState('ALL');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
-  const filtered = activeFilter === 'ALL'
-    ? PANDITS
-    : PANDITS.filter(p => p.category.toUpperCase() === activeFilter || p.specialty.toUpperCase().includes(activeFilter));
+  const { data: dbPandits = [] } = useGetPandits();
+  const panditsList = dbPandits.length > 0 ? dbPandits : PANDITS;
 
-  const getAvailLabel = (p: Pandit) => {
-    if (p.available === 'today') return { label: 'AVAILABLE TODAY', color: colors.success };
-    if (p.available === 'tomorrow') return { label: 'TOMORROW', color: colors.orange };
+  const filtered = activeFilter === 'ALL'
+    ? panditsList
+    : panditsList.filter(p => p.category.toUpperCase() === activeFilter || p.specialty.toUpperCase().includes(activeFilter));
+
+  const getAvailLabel = (available: string) => {
+    if (available === 'today') return { label: 'AVAILABLE TODAY', color: colors.success };
+    if (available === 'tomorrow') return { label: 'TOMORROW', color: colors.orange };
     return { label: 'NEXT WEEK', color: colors.mutedForeground };
   };
 
@@ -74,12 +78,12 @@ export default function PanditsScreen() {
       {/* Pandit List */}
       <FlatList
         data={filtered}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ padding: 20, paddingBottom: TAB_BAR_HEIGHT + 20 }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         renderItem={({ item }) => {
-          const avail = getAvailLabel(item);
+          const avail = getAvailLabel(item.available);
           return (
             <Pressable
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -89,7 +93,7 @@ export default function PanditsScreen() {
               }}
             >
               <Image
-                source={PANDIT_IMAGES[item.id]}
+                source={PANDIT_IMAGES[item.id.toString()] ?? PANDIT_IMAGES['1']}
                 style={styles.avatar}
                 resizeMode="cover"
               />

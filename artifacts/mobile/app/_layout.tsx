@@ -4,6 +4,12 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from "@expo-google-fonts/poppins";
 import { Feather } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -16,10 +22,26 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CartProvider } from "@/context/CartContext";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+const getBaseUrl = () => {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      return 'http://localhost:5000';
+    }
+    return '';
+  }
+  return Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
+};
+
+setBaseUrl(getBaseUrl());
+setAuthTokenGetter(() => AsyncStorage.getItem('auth_token'));
 
 function RootLayoutNav() {
   return (
@@ -58,6 +80,10 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
     ...Feather.font,
   });
 

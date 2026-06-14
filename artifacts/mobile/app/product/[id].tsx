@@ -13,10 +13,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { STORE_ITEMS, UTENSILS } from '@/constants/data';
-import { STORE_IMAGES } from '@/constants/images';
+import { STORE_ITEMS, UTENSILS, PANDITS } from '@/constants/data';
+import { STORE_IMAGES, PANDIT_IMAGES } from '@/constants/images';
 import { useCart } from '@/context/CartContext';
 import { useColors } from '@/hooks/useColors';
+import { useGetPandits } from '@workspace/api-client-react';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,6 +31,81 @@ export default function ProductDetailScreen() {
   const allItems = [...STORE_ITEMS, ...UTENSILS];
   const item = allItems.find(i => i.id === id) ?? STORE_ITEMS[0];
   const imageSource = STORE_IMAGES[item.id] ?? STORE_IMAGES['si2'];
+
+  const { data: dbPandits = [] } = useGetPandits();
+  const panditsList = dbPandits.length > 0 ? dbPandits : PANDITS;
+
+  const getRecommendedPandits = () => {
+    const itemNameLower = (item?.name || '').toLowerCase();
+    
+    if (itemNameLower.includes('havan') || itemNameLower.includes('ghee')) {
+      return panditsList.filter(p => p.category === 'havan' || p.category === 'vedic');
+    }
+    if (itemNameLower.includes('rudraksh') || itemNameLower.includes('mala') || itemNameLower.includes('agarbatti')) {
+      return panditsList.filter(p => p.category === 'astrology');
+    }
+    if (itemNameLower.includes('thali') || itemNameLower.includes('diya') || itemNameLower.includes('kalash') || itemNameLower.includes('bell') || itemNameLower.includes('holder')) {
+      return panditsList.filter(p => p.category === 'griha' || p.category === 'vedic');
+    }
+    return [...panditsList].sort((a, b) => b.rating - a.rating).slice(0, 2);
+  };
+
+  const renderRecommendedPandits = () => {
+    const recommended = getRecommendedPandits();
+    if (recommended.length === 0) return null;
+
+    return (
+      <View style={styles.recommendSection}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended Pandits for Rituals</Text>
+        <Text style={[styles.recommendSub, { color: colors.mutedForeground }]}>
+          Book a verified Pandit to perform pooja using this Samagri
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.recommendScroll}
+        >
+          {recommended.map(p => {
+            const imageSource = PANDIT_IMAGES[p.id.toString()] ?? PANDIT_IMAGES['1'];
+            return (
+              <Pressable
+                key={p.id}
+                style={[styles.panditCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/pandit/${p.id}` as any);
+                }}
+              >
+                <Image source={imageSource} style={styles.panditImg} resizeMode="cover" />
+                <View style={styles.panditInfo}>
+                  <Text style={[styles.panditName, { color: colors.text }]} numberOfLines={1}>
+                    {p.name}
+                  </Text>
+                  <Text style={[styles.panditSpec, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    {p.specialty}
+                  </Text>
+                  <View style={styles.panditRatingRow}>
+                    <Feather name="star" size={12} color={colors.gold} />
+                    <Text style={[styles.panditRating, { color: colors.text }]}>{p.rating}</Text>
+                    <Text style={[styles.panditCity, { color: colors.mutedForeground }]}> · {p.city}</Text>
+                  </View>
+                  <Pressable
+                    style={[styles.bookBtnSmall, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      router.push(`/book/${p.id}` as any);
+                    }}
+                  >
+                    <Text style={styles.bookBtnTextSmall}>Book Now</Text>
+                  </Pressable>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  };
 
   const benefits = [
     '100% authentic & organic ingredients',
@@ -116,6 +192,7 @@ export default function ProductDetailScreen() {
               </Text>
             </View>
           </View>
+          {renderRecommendedPandits()}
         </View>
       </ScrollView>
 
@@ -187,8 +264,79 @@ const styles = StyleSheet.create({
   },
   cartBtn: { width: 50, height: 50, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   addBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderRadius: 14, paddingVertical: 15, gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    paddingVertical: 15, gap: 10,
   },
   addBtnText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 15 },
+  recommendSection: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    paddingTop: 16,
+  },
+  recommendSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  recommendScroll: {
+    paddingRight: 20,
+    gap: 12,
+    paddingVertical: 4,
+  },
+  panditCard: {
+    width: 260,
+    flexDirection: 'row',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
+  },
+  panditImg: {
+    width: 70,
+    height: '100%',
+    minHeight: 110,
+    borderRadius: 10,
+  },
+  panditInfo: {
+    flex: 1,
+    justifyContent: 'space-between',
+    gap: 2,
+  },
+  panditName: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+  },
+  panditSpec: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+  },
+  panditRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  panditRating: {
+    fontSize: 11,
+    fontFamily: 'Inter_700Bold',
+  },
+  panditCity: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+  },
+  bookBtnSmall: {
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  bookBtnTextSmall: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+  },
 });

@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -8,10 +9,14 @@ import {
   StyleSheet,
   Text,
   View,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import { STORE_ITEMS, UTENSILS } from '@/constants/data';
+import { STORE_IMAGES } from '@/constants/images';
+import { useAuthMe, useGetOrders, getGetOrdersQueryKey } from '@workspace/api-client-react';
 
 const ORDERS = [
   {
@@ -43,16 +48,47 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
   cancelled: { label: 'CANCELLED', color: '#EF4444', icon: 'x-circle' },
 };
 
+const ORDER_STATUS_STEPS = [
+  { key: 'processing', label: 'Order Placed', icon: 'shopping-bag' },
+  { key: 'in_transit', label: 'In Transit', icon: 'truck' },
+  { key: 'delivered', label: 'Delivered & Completed', icon: 'check-circle' },
+];
+
 export default function OrderHistoryScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [activeFilter, setActiveFilter] = useState('ALL');
+  const [expandedTrackId, setExpandedTrackId] = useState<string | null>(null);
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+
+  const { data: user } = useAuthMe();
+  const { data: apiOrders = [] } = useGetOrders({
+    query: {
+      enabled: !!user,
+      queryKey: getGetOrdersQueryKey(),
+    },
+  });
+
+  const rawOrders = user ? apiOrders : ORDERS;
+
+  // Format order items for UI display if they come from DB
+  const userOrders = rawOrders.map((o: any) => {
+    // If date is date-time string from DB, parse to visual string
+    let dateStr = o.date;
+    if (o.createdAt) {
+      const d = new Date(o.createdAt);
+      dateStr = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    return {
+      ...o,
+      date: dateStr,
+    };
+  });
 
   const FILTERS = ['ALL', 'DELIVERED', 'IN TRANSIT'];
   const filtered = activeFilter === 'ALL'
-    ? ORDERS
-    : ORDERS.filter(o => o.status.replace('_', ' ').toUpperCase() === activeFilter);
+    ? userOrders
+    : userOrders.filter(o => o.status.replace('_', ' ').toUpperCase() === activeFilter);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -62,7 +98,7 @@ export default function OrderHistoryScreen() {
         </Pressable>
         <View>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Order History</Text>
-          <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{ORDERS.length} orders placed</Text>
+          <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{userOrders.length} orders placed</Text>
         </View>
         <View style={{ width: 36 }} />
       </View>
@@ -104,23 +140,93 @@ export default function OrderHistoryScreen() {
 
               {/* Items */}
               <View style={styles.itemsList}>
-                {item.items.map((it, i) => (
-                  <View key={i} style={styles.itemRow}>
-                    <View style={[styles.itemDot, { backgroundColor: colors.primary }]} />
-                    <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>{it.name}</Text>
-                    <Text style={[styles.itemQty, { color: colors.mutedForeground }]}>×{it.qty}</Text>
-                    <Text style={[styles.itemPrice, { color: colors.text }]}>₹{(it.price * it.qty).toLocaleString('en-IN')}</Text>
-                  </View>
-                ))}
+                {(item.items as any[]).map((it: any, i: number) => {
+                  const allStore = [...STORE_ITEMS, ...UTENSILS];
+                  const storeItem = allStore.find(s => s.name.toLowerCase() === it.name.toLowerCase());
+                  const imageSource = storeItem ? STORE_IMAGES[storeItem.id] : STORE_IMAGES['si1'];
+
+                  return (
+                    <View key={i} style={styles.itemRow}>
+                      <Image
+                        source={imageSource}
+                        style={styles.itemImage}
+                        resizeMode="cover"
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>{it.name}</Text>
+                        {storeItem?.unit && (
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>
+                            {storeItem.unit}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[styles.itemQty, { color: colors.mutedForeground, marginRight: 10 }]}>×{it.qty}</Text>
+                      <Text style={[styles.itemPrice, { color: colors.text }]}>₹{(it.price * it.qty).toLocaleString('en-IN')}</Text>
+                    </View>
+                  );
+                })}
               </View>
 
               {/* Footer */}
               <View style={[styles.orderFooter, { borderTopColor: colors.border }]}>
                 <Text style={[styles.footerLabel, { color: colors.mutedForeground }]}>
-                  {item.items.length} item{item.items.length > 1 ? 's' : ''}
+                  {(item.items as any[]).length} item{(item.items as any[]).length > 1 ? 's' : ''}
                 </Text>
                 <Text style={[styles.totalAmount, { color: colors.primary }]}>₹{item.amount.toLocaleString('en-IN')}</Text>
               </View>
+
+              {/* Track Order */}
+              {item.status !== 'cancelled' && (
+                <Pressable
+                  style={[styles.trackToggleBtn, { borderTopColor: colors.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setExpandedTrackId(expandedTrackId === item.id ? null : item.id);
+                  }}
+                >
+                  <Feather
+                    name={expandedTrackId === item.id ? 'chevron-up' : 'map-pin'}
+                    size={14}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.trackToggleText, { color: colors.primary }]}>
+                    {expandedTrackId === item.id ? 'Hide Tracking details' : 'Track Order'}
+                  </Text>
+                </Pressable>
+              )}
+
+              {expandedTrackId === item.id && item.status !== 'cancelled' && (
+                <View style={[styles.trackingContainer, { borderTopColor: colors.border, backgroundColor: colors.card, padding: 16 }]}>
+                  {ORDER_STATUS_STEPS.map((step, idx) => {
+                    const completedSteps = item.status === 'delivered' ? 3 : item.status === 'in_transit' ? 2 : item.status === 'processing' ? 1 : 0;
+                    const isCompleted = idx < completedSteps;
+                    const isLast = idx === ORDER_STATUS_STEPS.length - 1;
+
+                    return (
+                      <View key={step.key} style={styles.trackRow}>
+                        <View style={styles.trackLeft}>
+                          <View style={[styles.trackDot, { backgroundColor: isCompleted ? colors.success : colors.border }]}>
+                            <Feather name={step.icon as any} size={11} color={isCompleted ? '#FFFFFF' : colors.mutedForeground} />
+                          </View>
+                          {!isLast && (
+                            <View style={[styles.trackLine, { backgroundColor: idx < completedSteps - 1 ? colors.success : colors.border }]} />
+                          )}
+                        </View>
+                        <View style={styles.trackInfo}>
+                          <Text style={[styles.trackStepLabel, { color: isCompleted ? colors.text : colors.mutedForeground }]}>
+                            {step.label}
+                          </Text>
+                          <Text style={[styles.trackStepDesc, { color: colors.mutedForeground }]}>
+                            {idx === 0 && 'We have received your order and are packing your items.'}
+                            {idx === 1 && 'Your items are packaged and in transit to your address.'}
+                            {idx === 2 && 'Your order has been delivered successfully. Enjoy your rituals!'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
 
               {/* Reorder */}
               {item.status === 'delivered' && (
@@ -166,6 +272,7 @@ const styles = StyleSheet.create({
   itemsList: { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   itemDot: { width: 5, height: 5, borderRadius: 2.5 },
+  itemImage: { width: 36, height: 36, borderRadius: 8, marginRight: 4 },
   itemName: { flex: 1, fontSize: 13, fontFamily: 'Inter_400Regular' },
   itemQty: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   itemPrice: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
@@ -176,8 +283,61 @@ const styles = StyleSheet.create({
   footerLabel: { fontSize: 13, fontFamily: 'Inter_400Regular' },
   totalAmount: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   reorderBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8, paddingVertical: 12, borderTopWidth: 1,
   },
   reorderText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  trackToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+  },
+  trackToggleText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  trackingContainer: {
+    borderTopWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  trackRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  trackLeft: {
+    alignItems: 'center',
+  },
+  trackDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trackLine: {
+    width: 2,
+    height: 38,
+    marginVertical: 2,
+  },
+  trackInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  trackStepLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  trackStepDesc: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 15,
+  },
 });

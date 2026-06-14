@@ -1,8 +1,10 @@
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,25 +17,117 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
-
-const CITIES = ['Delhi NCR', 'Mumbai', 'Varanasi', 'Pune', 'Bengaluru', 'Hyderabad', 'Chennai', 'Kolkata'];
+import { useAuthRegister } from '@workspace/api-client-react';
+import { validatePincodeOffline } from '@/constants/data';
 
 export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [resolvingPin, setResolvingPin] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showCities, setShowCities] = useState(false);
+  const [error, setError] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const registerMutation = useAuthRegister();
+
+  const handlePincodeChange = async (pin: string) => {
+    const cleanPin = pin.replace(/[^0-9]/g, '');
+    setPincode(cleanPin);
+    if (cleanPin.length < 6) {
+      setCity('');
+      setError('');
+      return;
+    }
+
+    setError('');
+    setResolvingPin(true);
+
+    const offlineCity = validatePincodeOffline(cleanPin);
+    if (!offlineCity) {
+      setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+      setCity('');
+      setResolvingPin(false);
+      return;
+    }
+
+    setCity(offlineCity);
+
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`);
+      const data = await res.json();
+      if (data && data[0] && data[0].Status === 'Success') {
+        const postOffices = data[0].PostOffice;
+        if (postOffices && postOffices.length > 0) {
+          const state = postOffices[0].State;
+          const district = postOffices[0].District;
+          if (state === 'Uttar Pradesh') {
+            setCity(district);
+            setError('');
+          } else {
+            setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+            setCity('');
+          }
+        }
+      }
+    } catch (err) {
+      // Quietly keep offline fallback
+    } finally {
+      setResolvingPin(false);
+    }
+  };
+
   const fields = [
-    { label: 'FULL NAME', icon: 'user', placeholder: 'Arnav Sharma', value: name, setter: setName, keyboardType: 'default' as const },
-    { label: 'PHONE NUMBER', icon: 'phone', placeholder: '98765 43210', value: phone, setter: setPhone, keyboardType: 'phone-pad' as const },
+    { label: 'FULL NAME', icon: 'user', placeholder: 'Enter your full name', value: name, setter: setName, keyboardType: 'default' as const },
+    { label: 'EMAIL ADDRESS', icon: 'mail', placeholder: 'Enter your email address', value: email, setter: setEmail, keyboardType: 'email-address' as const },
+    { label: 'PHONE NUMBER', icon: 'phone', placeholder: 'Enter your phone number', value: phone, setter: setPhone, keyboardType: 'phone-pad' as const },
   ];
+
+  const handleRegister = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+
+    if (!name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    if (!email.trim() && !phone.trim()) {
+      setError('Please provide email or phone number');
+      return;
+    }
+    if (!city) {
+      setError('Please enter a valid Uttar Pradesh pincode');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    try {
+      const result = await registerMutation.mutateAsync({
+        data: {
+          name: name.trim(),
+          email: email.trim() || undefined,
+          phone: phone.trim() || undefined,
+          city: city || undefined,
+          password,
+        },
+      });
+
+      await AsyncStorage.setItem('auth_token', result.token);
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Registration failed';
+      setError(message);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -59,6 +153,14 @@ export default function RegisterScreen() {
           <Text style={[styles.sub, { color: colors.mutedForeground }]}>Join thousands of devotees on Sankalp</Text>
         </View>
 
+        {/* Error */}
+        {error ? (
+          <View style={[styles.errorBox, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
+            <Feather name="alert-circle" size={16} color="#DC2626" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
         {/* Fields */}
         {fields.map(f => (
           <View key={f.label} style={styles.fieldGroup}>
@@ -72,38 +174,33 @@ export default function RegisterScreen() {
                 keyboardType={f.keyboardType}
                 value={f.value}
                 onChangeText={f.setter}
+                autoCapitalize={f.keyboardType === 'email-address' ? 'none' : 'words'}
               />
             </View>
           </View>
         ))}
 
-        {/* City picker */}
+        {/* Pincode Input */}
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>CITY</Text>
-          <Pressable
-            style={[styles.inputRow, { backgroundColor: colors.card, borderColor: showCities ? colors.primary : colors.border }]}
-            onPress={() => setShowCities(!showCities)}
-          >
-            <Feather name="map-pin" size={18} color={colors.mutedForeground} />
-            <Text style={[styles.input, { color: city ? colors.text : colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              {city || 'Select your city'}
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (UTTAR PRADESH ONLY)</Text>
+          <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="hash" size={18} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.input, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
+              placeholder="Enter 6-digit Pincode"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={pincode}
+              onChangeText={handlePincodeChange}
+            />
+            {resolvingPin && <ActivityIndicator size="small" color={colors.primary} />}
+          </View>
+          {city ? (
+            <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: colors.success, marginTop: 6, marginLeft: 4 }}>
+              Location: {city}, Uttar Pradesh
             </Text>
-            <Feather name={showCities ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          {showCities && (
-            <View style={[styles.dropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {CITIES.map(c => (
-                <Pressable
-                  key={c}
-                  style={[styles.dropdownItem, { borderBottomColor: colors.border }]}
-                  onPress={() => { setCity(c); setShowCities(false); }}
-                >
-                  <Text style={[styles.dropdownText, { color: colors.text }]}>{c}</Text>
-                  {city === c && <Feather name="check" size={16} color={colors.primary} />}
-                </Pressable>
-              ))}
-            </View>
-          )}
+          ) : null}
         </View>
 
         {/* Password */}
@@ -135,13 +232,15 @@ export default function RegisterScreen() {
 
         {/* Create Account */}
         <Pressable
-          style={[styles.createBtn, { backgroundColor: colors.primary }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push('/otp' as any);
-          }}
+          style={[styles.createBtn, { backgroundColor: colors.primary, opacity: registerMutation.isPending ? 0.7 : 1 }]}
+          onPress={handleRegister}
+          disabled={registerMutation.isPending}
         >
-          <Text style={styles.createBtnText}>CREATE ACCOUNT</Text>
+          {registerMutation.isPending ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.createBtnText}>CREATE ACCOUNT</Text>
+          )}
         </Pressable>
 
         <View style={styles.loginRow}>
@@ -167,6 +266,11 @@ const styles = StyleSheet.create({
   logoOm: { fontSize: 28, color: '#FFFFFF' },
   heading: { fontSize: 24, fontFamily: 'Inter_700Bold', marginBottom: 6 },
   sub: { fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  errorBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10,
+    borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16,
+  },
+  errorText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: '#DC2626', flex: 1 },
   fieldGroup: { marginBottom: 16 },
   label: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.5, marginBottom: 8 },
   inputRow: {

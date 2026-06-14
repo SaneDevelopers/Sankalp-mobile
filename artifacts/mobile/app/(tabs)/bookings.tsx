@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 import { BOOKINGS, Booking } from '@/constants/data';
 import { useColors } from '@/hooks/useColors';
+import { useAuthMe, useGetBookings, getGetBookingsQueryKey } from '@workspace/api-client-react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FILTERS = ['ALL', 'UPCOMING', 'COMPLETED'];
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
@@ -22,12 +24,35 @@ const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 export default function BookingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
+  const { data: user } = useAuthMe();
+  const { data: apiBookings = [], refetch } = useGetBookings({
+    query: {
+      enabled: !!user,
+      queryKey: getGetBookingsQueryKey(),
+    },
+  });
+
+  React.useEffect(() => {
+    if (user) {
+      refetch();
+    }
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (user) {
+        refetch();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, user]);
+
+  const userBookings = user ? apiBookings : BOOKINGS;
+
   const filtered = activeFilter === 'ALL'
-    ? BOOKINGS
-    : BOOKINGS.filter(b => b.status.toUpperCase() === activeFilter);
+    ? userBookings
+    : userBookings.filter(b => b.status.toUpperCase() === activeFilter);
 
   const getStatusStyle = (status: Booking['status']) => {
     if (status === 'upcoming') return { color: colors.upcoming, bg: colors.upcoming + '15' };
@@ -41,7 +66,7 @@ export default function BookingsScreen() {
       <View style={[styles.header, { paddingTop: topPadding + 16, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Booking History</Text>
-          <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>Your sacred journey · {BOOKINGS.length} rituals</Text>
+          <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>Your sacred journey · {filtered.length} rituals</Text>
         </View>
       </View>
 
@@ -71,7 +96,7 @@ export default function BookingsScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ padding: 20, paddingBottom: TAB_BAR_HEIGHT + 20 }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -82,7 +107,7 @@ export default function BookingsScreen() {
           </View>
         )}
         renderItem={({ item }) => {
-          const statusStyle = getStatusStyle(item.status);
+          const statusStyle = getStatusStyle(item.status as any);
           return (
             <Pressable
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}

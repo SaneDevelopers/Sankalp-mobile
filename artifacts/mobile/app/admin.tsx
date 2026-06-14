@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -8,30 +8,351 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
+  Modal,
+  TextInput,
+  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useColors } from '@/hooks/useColors';
+import {
+  useGetBookings,
+  useUpdateBookingStatus,
+  useGetOrders,
+  useUpdateOrderStatus,
+  useGetPandits,
+  useCreatePandit,
+  useUpdatePandit,
+  useDeletePandit,
+} from '@workspace/api-client-react';
+import { validatePincodeOffline } from '@/constants/data';
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const BAR_DATA = [65, 40, 80, 55, 90, 70, 45];
 
+const CATEGORIES = ['vedic', 'astrology', 'havan', 'griha'];
+
+interface PanditFormData {
+  id?: number;
+  name: string;
+  shortName: string;
+  specialty: string;
+  category: string;
+  rating: number;
+  experience: string;
+  bookings: number;
+  age: number;
+  city: string;
+  address: string;
+  available: string;
+  specializations: string[];
+  muhurats: string[];
+  poojas: Array<{ id: string; name: string; duration: string; price: number; includesPrasad: boolean }>;
+  initials: string;
+  avatarColor: string;
+}
+
 export default function AdminScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const [activeTab, setActiveTab] = useState<'orders' | 'bookings' | 'pandits'>('orders');
+
+  // React Query queries
+  const { data: bookings = [], isLoading: loadingBookings } = useGetBookings();
+  const { data: orders = [], isLoading: loadingOrders } = useGetOrders();
+  const { data: pandits = [], isLoading: loadingPandits } = useGetPandits();
+
+  // Mutations
+  const updateBookingStatusMutation = useUpdateBookingStatus();
+  const updateOrderStatusMutation = useUpdateOrderStatus();
+  const createPanditMutation = useCreatePandit();
+  const updatePanditMutation = useUpdatePandit();
+  const deletePanditMutation = useDeletePandit();
+
+  // Pandit Form Modal state
+  const [panditModalVisible, setPanditModalVisible] = useState(false);
+  const [panditForm, setPanditForm] = useState<PanditFormData>({
+    name: '',
+    shortName: '',
+    specialty: '',
+    category: 'vedic',
+    rating: 4.8,
+    experience: '10 Yrs',
+    bookings: 100,
+    age: 40,
+    city: '',
+    address: '',
+    available: 'today',
+    specializations: [],
+    muhurats: ['8:00 AM', '11:00 AM', '4:00 PM'],
+    poojas: [],
+    initials: '',
+    avatarColor: '#7B4F2E',
+  });
+
+  const [specInput, setSpecInput] = useState('');
+  const [poojaName, setPoojaName] = useState('');
+  const [poojaPrice, setPoojaPrice] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [resolvingPin, setResolvingPin] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const maxBar = Math.max(...BAR_DATA);
+
+  // Status transitions
+  const handleUpdateOrderStatus = async (id: number, status: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await updateOrderStatusMutation.mutateAsync({
+        id,
+        data: { status },
+      });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateBookingStatus = async (id: number, status: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await updateBookingStatusMutation.mutateAsync({
+        id,
+        data: { status },
+      });
+      await queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Pincode resolution for Pandit city
+  const handlePincodeChange = async (pin: string) => {
+    const cleanPin = pin.replace(/[^0-9]/g, '');
+    setPincode(cleanPin);
+    if (cleanPin.length < 6) return;
+
+    setResolvingPin(true);
+    const offlineCity = validatePincodeOffline(cleanPin);
+    if (!offlineCity) {
+      setFormError('Pandit must reside in Uttar Pradesh (UP). Pincode not supported.');
+      setResolvingPin(false);
+      return;
+    }
+
+    setPanditForm(prev => ({ ...prev, city: offlineCity }));
+    setFormError('');
+
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`);
+      const data = await res.json();
+      if (data && data[0] && data[0].Status === 'Success') {
+        const postOffices = data[0].PostOffice;
+        if (postOffices && postOffices.length > 0) {
+          const state = postOffices[0].State;
+          const district = postOffices[0].District;
+          if (state === 'Uttar Pradesh') {
+            setPanditForm(prev => ({ ...prev, city: district }));
+          } else {
+            setFormError('Pandit must reside in Uttar Pradesh (UP).');
+          }
+        }
+      }
+    } catch (e) {
+      // Offline fallback is already set
+    } finally {
+      setResolvingPin(false);
+    }
+  };
+
+  // Add specialization chip
+  const addSpec = () => {
+    if (specInput.trim() && !panditForm.specializations.includes(specInput.trim())) {
+      setPanditForm(prev => ({
+        ...prev,
+        specializations: [...prev.specializations, specInput.trim()],
+      }));
+      setSpecInput('');
+    }
+  };
+
+  // Remove spec chip
+  const removeSpec = (spec: string) => {
+    setPanditForm(prev => ({
+      ...prev,
+      specializations: prev.specializations.filter(s => s !== spec),
+    }));
+  };
+
+  // Add Pooja option
+  const addPooja = () => {
+    if (poojaName.trim() && poojaPrice.trim()) {
+      const priceVal = parseInt(poojaPrice, 10);
+      if (isNaN(priceVal)) return;
+
+      const randomId = 'p' + Math.floor(100 + Math.random() * 900);
+      setPanditForm(prev => ({
+        ...prev,
+        poojas: [...prev.poojas, { id: randomId, name: poojaName.trim(), duration: '2 Hrs', price: priceVal, includesPrasad: true }],
+      }));
+      setPoojaName('');
+      setPoojaPrice('');
+    }
+  };
+
+  // Remove Pooja
+  const removePooja = (pId: string) => {
+    setPanditForm(prev => ({
+      ...prev,
+      poojas: prev.poojas.filter(p => p.id !== pId),
+    }));
+  };
+
+  // Open Add Pandit modal
+  const openAddPandit = () => {
+    setPanditForm({
+      name: '',
+      shortName: '',
+      specialty: '',
+      category: 'vedic',
+      rating: 4.8,
+      experience: '10 Yrs',
+      bookings: 120,
+      age: 38,
+      city: '',
+      address: '',
+      available: 'today',
+      specializations: ['Satyanarayan', 'Griha Pravesh'],
+      muhurats: ['8:00 AM', '11:00 AM', '4:00 PM'],
+      poojas: [
+        { id: 'p1', name: 'Satyanarayan Katha', duration: '1.5 Hrs', price: 2499, includesPrasad: true },
+      ],
+      initials: '',
+      avatarColor: '#7B4F2E',
+    });
+    setPincode('');
+    setFormError('');
+    setPanditModalVisible(true);
+  };
+
+  // Open Edit Pandit modal
+  const openEditPandit = (p: any) => {
+    setPanditForm({
+      id: p.id,
+      name: p.name,
+      shortName: p.shortName,
+      specialty: p.specialty,
+      category: p.category,
+      rating: p.rating,
+      experience: p.experience,
+      bookings: p.bookings,
+      age: p.age,
+      city: p.city,
+      address: p.address,
+      available: p.available,
+      specializations: p.specializations || [],
+      muhurats: p.muhurats || [],
+      poojas: p.poojas || [],
+      initials: p.initials,
+      avatarColor: p.avatarColor,
+    });
+    setPincode('');
+    setFormError('');
+    setPanditModalVisible(true);
+  };
+
+  // Handle Pandit Form Save
+  const handleSavePandit = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setFormError('');
+
+    if (!panditForm.name.trim()) {
+      setFormError('Pandit name is required');
+      return;
+    }
+    if (!panditForm.specialty.trim()) {
+      setFormError('Specialty is required');
+      return;
+    }
+    if (!panditForm.city) {
+      setFormError('A valid Uttar Pradesh city/location is required');
+      return;
+    }
+
+    // Auto-calculate initials if empty
+    let initials = panditForm.initials;
+    if (!initials) {
+      const parts = panditForm.name.split(' ');
+      if (parts.length >= 2) {
+        initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else {
+        initials = panditForm.name.substring(0, 2).toUpperCase();
+      }
+    }
+
+    const shortName = panditForm.shortName || (panditForm.name.length > 12 ? panditForm.name.substring(0, 11) + '...' : panditForm.name);
+
+    setIsSubmitting(true);
+    try {
+      if (panditForm.id) {
+        // Edit Pandit
+        await updatePanditMutation.mutateAsync({
+          id: panditForm.id,
+          data: {
+            ...panditForm,
+            initials,
+            shortName,
+          },
+        });
+      } else {
+        // Create Pandit
+        await createPanditMutation.mutateAsync({
+          data: {
+            ...panditForm,
+            initials,
+            shortName,
+          },
+        });
+      }
+      await queryClient.invalidateQueries({ queryKey: ['/api/pandits'] });
+      setPanditModalVisible(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: any) {
+      setFormError(err?.data?.message || err?.message || 'Failed to save pandit');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete Pandit
+  const handleDeletePandit = async (id: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await deletePanditMutation.mutateAsync({ id });
+      await queryClient.invalidateQueries({ queryKey: ['/api/pandits'] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
-      {/* Dark Header */}
+      {/* Header */}
       <View style={[styles.adminHeader, { paddingTop: topPadding + 16 }]}>
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.adminConsoleLabel}>ADMIN CONSOLE</Text>
-            <Text style={styles.adminTitle}>Sankalp</Text>
+            <Text style={styles.adminTitle}>Sankalp Control</Text>
           </View>
           <View style={[styles.adminAvatar, { backgroundColor: colors.gold }]}>
             <Text style={styles.adminAvatarText}>A</Text>
@@ -42,90 +363,194 @@ export default function AdminScreen() {
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
             <View style={styles.statCardHeader}>
-              <Feather name="dollar-sign" size={14} color={colors.gold} />
-              <Text style={styles.statCardLabel}>REVENUE</Text>
+              <Feather name="package" size={14} color={colors.gold} />
+              <Text style={styles.statCardLabel}>ORDERS</Text>
             </View>
-            <Text style={styles.statCardValue}>₹4.2L</Text>
-            <Text style={styles.statCardGrowth}>+18%</Text>
+            <Text style={styles.statCardValue}>{orders.length}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
             <View style={styles.statCardHeader}>
               <Feather name="calendar" size={14} color={colors.gold} />
               <Text style={styles.statCardLabel}>BOOKINGS</Text>
             </View>
-            <Text style={styles.statCardValue}>284</Text>
-            <Text style={styles.statCardGrowth}>+12%</Text>
+            <Text style={styles.statCardValue}>{bookings.length}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
             <View style={styles.statCardHeader}>
               <Feather name="users" size={14} color={colors.gold} />
               <Text style={styles.statCardLabel}>PANDITS</Text>
             </View>
-            <Text style={styles.statCardValue}>47</Text>
-            <Text style={styles.statCardGrowth}>+3</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
-            <View style={styles.statCardHeader}>
-              <Feather name="trending-up" size={14} color={colors.gold} />
-              <Text style={styles.statCardLabel}>RATING</Text>
-            </View>
-            <Text style={styles.statCardValue}>4.8</Text>
-            <Text style={styles.statCardGrowth}>★★★★★</Text>
+            <Text style={styles.statCardValue}>{pandits.length}</Text>
           </View>
         </View>
       </View>
 
-      {/* White Body */}
+      {/* Navigation tabs */}
+      <View style={styles.tabRow}>
+        {(['orders', 'bookings', 'pandits'] as const).map(tab => (
+          <Pressable
+            key={tab}
+            style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
+            onPress={() => {
+              setActiveTab(tab);
+              Haptics.selectionAsync();
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              {tab.toUpperCase()}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Body Scroll */}
       <ScrollView
         style={[styles.body, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: bottomPadding + 20 }}
+        contentContainerStyle={{ paddingBottom: bottomPadding + 40 }}
       >
-        {/* Chart */}
-        <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.chartHeader}>
-            <Text style={[styles.chartTitle, { color: colors.text }]}>Bookings · This Week</Text>
-          </View>
-          <View style={styles.chartBars}>
-            {BAR_DATA.map((val, idx) => (
-              <View key={idx} style={styles.barCol}>
-                <View style={styles.barTrack}>
-                  <View
-                    style={[
-                      styles.bar,
-                      {
-                        height: `${(val / maxBar) * 100}%`,
-                        backgroundColor: idx === 4 ? colors.gold : colors.primary + '60',
-                      },
-                    ]}
-                  />
+        {activeTab === 'orders' && (
+          <View style={styles.tabContent}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Orders ({orders.length})</Text>
+            {loadingOrders ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : (
+              orders.map(o => (
+                <View key={o.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.cardHeader}>
+                    <Text style={[styles.orderId, { color: colors.text }]}>Order #{o.orderId}</Text>
+                    <Text style={[styles.statusText, { color: colors.primary }]}>{o.status.toUpperCase()}</Text>
+                  </View>
+                  <Text style={[styles.addressLabel, { color: colors.mutedForeground, marginVertical: 6 }]}>
+                    Items: {o.items.map((i: any) => `${i.name} (x${i.qty})`).join(', ')}
+                  </Text>
+                  <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
+                    Shipping: {o.addressText}
+                  </Text>
+                  <View style={styles.statusButtonsRow}>
+                    {o.status === 'processing' && (
+                      <Pressable
+                        style={[styles.actionBtn, { backgroundColor: colors.gold }]}
+                        onPress={() => handleUpdateOrderStatus(o.id, 'in_transit')}
+                      >
+                        <Text style={styles.actionBtnText}>Ship Order (Transit)</Text>
+                      </Pressable>
+                    )}
+                    {o.status === 'in_transit' && (
+                      <Pressable
+                        style={[styles.actionBtn, { backgroundColor: colors.success }]}
+                        onPress={() => handleUpdateOrderStatus(o.id, 'delivered')}
+                      >
+                        <Text style={styles.actionBtnText}>Mark Delivered</Text>
+                      </Pressable>
+                    )}
+                    {o.status !== 'delivered' && o.status !== 'cancelled' && (
+                      <Pressable
+                        style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
+                        onPress={() => handleUpdateOrderStatus(o.id, 'cancelled')}
+                      >
+                        <Text style={styles.actionBtnText}>Cancel</Text>
+                      </Pressable>
+                    )}
+                  </View>
                 </View>
-                <Text style={[styles.barLabel, { color: colors.mutedForeground }]}>{DAYS[idx]}</Text>
-              </View>
-            ))}
+              ))
+            )}
+            {orders.length === 0 && !loadingOrders && (
+              <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No orders placed yet.</Text>
+            )}
           </View>
-        </View>
+        )}
 
-        {/* Quick Actions */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          {[
-            { icon: 'bar-chart-2', label: 'Analytics' },
-            { icon: 'users', label: 'Pandits' },
-            { icon: 'calendar', label: 'Bookings' },
-            { icon: 'settings', label: 'Settings' },
-          ].map(action => (
-            <Pressable
-              key={action.label}
-              style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: colors.primary + '15' }]}>
-                <Feather name={action.icon as any} size={22} color={colors.primary} />
-              </View>
-              <Text style={[styles.actionLabel, { color: colors.text }]}>{action.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {activeTab === 'bookings' && (
+          <View style={styles.tabContent}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Ritual Bookings ({bookings.length})</Text>
+            {loadingBookings ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : (
+              bookings.map(b => (
+                <View key={b.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.cardHeader}>
+                    <Text style={[styles.orderId, { color: colors.text }]}>Booking #{b.bookingId}</Text>
+                    <Text style={[styles.statusText, { color: colors.primary }]}>{b.status.toUpperCase()}</Text>
+                  </View>
+                  <Text style={[styles.poojaNameText, { color: colors.text, marginTop: 4 }]}>
+                    {b.poojaName} by {b.panditName}
+                  </Text>
+                  <Text style={[styles.addressText, { color: colors.mutedForeground, marginVertical: 4 }]}>
+                    Schedule: {b.date} · {b.time}
+                  </Text>
+                  <View style={styles.statusButtonsRow}>
+                    {b.status === 'upcoming' && (
+                      <Pressable
+                        style={[styles.actionBtn, { backgroundColor: colors.success }]}
+                        onPress={() => handleUpdateBookingStatus(b.id, 'completed')}
+                      >
+                        <Text style={styles.actionBtnText}>Complete Ritual</Text>
+                      </Pressable>
+                    )}
+                    {b.status === 'upcoming' && (
+                      <Pressable
+                        style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
+                        onPress={() => handleUpdateBookingStatus(b.id, 'cancelled')}
+                      >
+                        <Text style={styles.actionBtnText}>Cancel Booking</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              ))
+            )}
+            {bookings.length === 0 && !loadingBookings && (
+              <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No bookings made yet.</Text>
+            )}
+          </View>
+        )}
+
+        {activeTab === 'pandits' && (
+          <View style={styles.tabContent}>
+            <View style={styles.panditCrudHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Pandit CRUD ({pandits.length})</Text>
+              <Pressable style={[styles.addPanditBtn, { backgroundColor: colors.primary }]} onPress={openAddPandit}>
+                <Feather name="plus" size={14} color="#FFFFFF" />
+                <Text style={styles.addPanditText}>Add Pandit</Text>
+              </Pressable>
+            </View>
+
+            {loadingPandits ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : (
+              pandits.map(p => (
+                <View key={p.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.cardHeader}>
+                    <Text style={[styles.orderId, { color: colors.text }]}>{p.name}</Text>
+                    <Text style={[styles.statusText, { color: colors.primary }]}>{p.category.toUpperCase()}</Text>
+                  </View>
+                  <Text style={[styles.poojaNameText, { color: colors.text, marginTop: 4 }]}>
+                    {p.specialty} · {p.experience}
+                  </Text>
+                  <Text style={[styles.addressText, { color: colors.mutedForeground, marginVertical: 4 }]}>
+                    Location: {p.address}, {p.city}
+                  </Text>
+                  <View style={styles.statusButtonsRow}>
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: colors.gold }]}
+                      onPress={() => openEditPandit(p)}
+                    >
+                      <Text style={styles.actionBtnText}>Edit Details</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
+                      onPress={() => handleDeletePandit(p.id)}
+                    >
+                      <Text style={styles.actionBtnText}>Delete</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
 
         <Pressable
           style={[styles.backBtn, { borderColor: colors.border }]}
@@ -135,6 +560,216 @@ export default function AdminScreen() {
           <Text style={[styles.backBtnText, { color: colors.mutedForeground }]}>Back to Profile</Text>
         </Pressable>
       </ScrollView>
+
+      {/* Pandit Form Modal */}
+      <Modal visible={panditModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>
+                {panditForm.id ? 'Edit Pandit Details' : 'Create Pandit Profile'}
+              </Text>
+              <Pressable onPress={() => setPanditModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.formScroll}>
+              {formError ? (
+                <View style={[styles.errorBox, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
+                  <Feather name="alert-circle" size={16} color="#DC2626" />
+                  <Text style={styles.errorText}>{formError}</Text>
+                </View>
+              ) : null}
+
+              {/* Pandit Name */}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>PANDIT NAME</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. Acharya R. Joshi"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={panditForm.name}
+                  onChangeText={val => setPanditForm(prev => ({ ...prev, name: val }))}
+                />
+              </View>
+
+              {/* Specialty */}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>SPECIALTY</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. Havan & Yagna Specialist"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={panditForm.specialty}
+                  onChangeText={val => setPanditForm(prev => ({ ...prev, specialty: val }))}
+                />
+              </View>
+
+              {/* Category */}
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>CATEGORY</Text>
+              <View style={styles.categoryRow}>
+                {CATEGORIES.map(cat => (
+                  <Pressable
+                    key={cat}
+                    onPress={() => setPanditForm(prev => ({ ...prev, category: cat }))}
+                    style={[
+                      styles.categoryTab,
+                      {
+                        borderColor: panditForm.category === cat ? colors.primary : colors.border,
+                        backgroundColor: panditForm.category === cat ? colors.primary + '12' : colors.card,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.categoryTabText, { color: panditForm.category === cat ? colors.primary : colors.text }]}>
+                      {cat.toUpperCase()}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Experience & Age */}
+              <View style={styles.doubleFieldRow}>
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>EXPERIENCE</Text>
+                  <TextInput
+                    style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                    placeholder="e.g. 15 Yrs"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={panditForm.experience}
+                    onChangeText={val => setPanditForm(prev => ({ ...prev, experience: val }))}
+                  />
+                </View>
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>AGE</Text>
+                  <TextInput
+                    style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                    placeholder="e.g. 45"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    value={panditForm.age.toString()}
+                    onChangeText={val => setPanditForm(prev => ({ ...prev, age: parseInt(val, 10) || 0 }))}
+                  />
+                </View>
+              </View>
+
+              {/* Pincode Resolution */}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (UTTAR PRADESH ONLY)</Text>
+                <View style={styles.pinInputWrap}>
+                  <TextInput
+                    style={[styles.inputField, { color: colors.text, borderColor: colors.border, flex: 1 }]}
+                    placeholder="Enter 6-digit PIN code"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    value={pincode}
+                    onChangeText={handlePincodeChange}
+                  />
+                  {resolvingPin && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 10 }} />}
+                </View>
+              </View>
+
+              {/* City resolved */}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>CITY (RESOLVED)</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, opacity: 0.8 }]}
+                  editable={false}
+                  placeholder="Will autodetect from pincode"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={panditForm.city}
+                />
+              </View>
+
+              {/* Address details */}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>PANDIT VENUE ADDRESS</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. Sector 2, Dashashwamedh, Varanasi, UP"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={panditForm.address}
+                  onChangeText={val => setPanditForm(prev => ({ ...prev, address: val }))}
+                />
+              </View>
+
+              {/* Specializations (Chips input) */}
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>SPECIALIZATIONS</Text>
+              <View style={styles.chipsWrap}>
+                {panditForm.specializations.map(s => (
+                  <View key={s} style={[styles.chip, { backgroundColor: colors.primary + '15' }]}>
+                    <Text style={[styles.chipText, { color: colors.primary }]}>{s}</Text>
+                    <Pressable onPress={() => removeSpec(s)}>
+                      <Feather name="x" size={12} color={colors.primary} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.chipAddRow}>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border, flex: 1, height: 40 }]}
+                  placeholder="Add specialization"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={specInput}
+                  onChangeText={setSpecInput}
+                />
+                <Pressable style={[styles.addChipBtn, { backgroundColor: colors.primary }]} onPress={addSpec}>
+                  <Text style={styles.addChipBtnText}>Add</Text>
+                </Pressable>
+              </View>
+
+              {/* Pooja services list */}
+              <Text style={[styles.label, { color: colors.mutedForeground, marginTop: 12 }]}>OFFERED POOJAS</Text>
+              <View style={styles.poojasList}>
+                {panditForm.poojas.map(p => (
+                  <View key={p.id} style={[styles.poojaItem, { borderColor: colors.border }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.poojaItemTitle, { color: colors.text }]}>{p.name}</Text>
+                      <Text style={[styles.poojaItemPrice, { color: colors.primary }]}>₹{p.price.toLocaleString('en-IN')}</Text>
+                    </View>
+                    <Pressable onPress={() => removePooja(p.id)} style={{ padding: 4 }}>
+                      <Feather name="trash-2" size={14} color={colors.destructive} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.addPoojaForm}>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border, flex: 2, height: 40 }]}
+                  placeholder="Pooja name (e.g. Ganesh Puja)"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={poojaName}
+                  onChangeText={setPoojaName}
+                />
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border, flex: 1, height: 40 }]}
+                  placeholder="Price"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="number-pad"
+                  value={poojaPrice}
+                  onChangeText={setPoojaPrice}
+                />
+                <Pressable style={[styles.addChipBtn, { backgroundColor: colors.primary }]} onPress={addPooja}>
+                  <Text style={styles.addChipBtnText}>Add</Text>
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: colors.primary, marginTop: 24 }]}
+                onPress={handleSavePandit}
+                disabled={isSubmitting || resolvingPin}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Save Pandit Profile</Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -143,13 +778,13 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   adminHeader: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   adminConsoleLabel: {
     color: 'rgba(255,255,255,0.5)',
@@ -160,7 +795,7 @@ const styles = StyleSheet.create({
   },
   adminTitle: {
     color: '#FFFFFF',
-    fontSize: 28,
+    fontSize: 26,
     fontFamily: 'Inter_700Bold',
   },
   adminAvatar: {
@@ -177,115 +812,224 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
   },
   statCard: {
-    width: '47%',
+    flex: 1,
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
   },
   statCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   statCardLabel: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Inter_600SemiBold',
     letterSpacing: 1,
   },
   statCardValue: {
     color: '#FFFFFF',
-    fontSize: 26,
+    fontSize: 22,
     fontFamily: 'Inter_700Bold',
-    marginBottom: 4,
   },
-  statCardGrowth: {
+  tabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabBtnActive: {
+    borderBottomColor: '#FFFFFF',
+  },
+  tabText: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 12,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 1.5,
   },
-  body: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  chartCard: {
-    margin: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
+  tabTextActive: {
+    color: '#FFFFFF',
   },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  chartTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  chartBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: 100,
-    gap: 8,
-  },
-  barCol: {
+  body: {
     flex: 1,
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'flex-end',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
-  barTrack: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'flex-end',
-    marginBottom: 6,
-  },
-  bar: {
-    width: '100%',
-    borderRadius: 4,
-    minHeight: 8,
-  },
-  barLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
+  tabContent: {
+    padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Inter_700Bold',
-    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  cardItem: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 14,
     marginBottom: 12,
   },
-  actionsGrid: {
+  cardHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    gap: 10,
-    marginBottom: 20,
-  },
-  actionCard: {
-    width: '47%',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
   },
-  actionIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+  orderId: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  statusText: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 0.5 },
+  poojaNameText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
+  addressLabel: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  addressText: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 16 },
+  statusButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  actionBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
+  },
+  panditCrudHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 16,
   },
-  actionLabel: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
+  addPanditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addPanditText: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Inter_700Bold' },
+  emptyLabel: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    marginTop: 30,
+  },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 20,
+    marginTop: 20,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
     gap: 8,
   },
   backBtnText: { fontSize: 14, fontFamily: 'Inter_500Medium' },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  modalTitle: { fontSize: 18, fontFamily: 'Inter_700Bold' },
+  closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  formScroll: { padding: 20, paddingBottom: 60 },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  errorText: { fontSize: 13, color: '#DC2626', fontFamily: 'Inter_500Medium', flex: 1 },
+  label: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.5, marginBottom: 8 },
+  fieldGroup: { marginBottom: 14 },
+  inputField: {
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  categoryTab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  categoryTabText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  doubleFieldRow: { flexDirection: 'row', gap: 10 },
+  pinInputWrap: { flexDirection: 'row', alignItems: 'center' },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  chipText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  chipAddRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  addChipBtn: {
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+  },
+  addChipBtnText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_700Bold' },
+  poojasList: { gap: 6, marginBottom: 8 },
+  poojaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  poojaItemTitle: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  poojaItemPrice: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  addPoojaForm: { flexDirection: 'row', gap: 6, marginBottom: 14 },
+  saveBtn: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'Inter_700Bold' },
 });

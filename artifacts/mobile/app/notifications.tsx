@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import { useAuthMe } from '@workspace/api-client-react';
 
 const NOTIFICATIONS = [
   { id: 'n1', type: 'booking', icon: 'calendar', title: 'Booking Confirmed!', body: 'Your Satyanarayan Katha with Acharya Shastri on 15 Oct at 9:30 AM is confirmed.', time: '2 hrs ago', read: false },
@@ -33,7 +34,18 @@ const TYPE_COLORS: Record<string, string> = {
 export default function NotificationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+
+  const { data: user } = useAuthMe();
   const [notifs, setNotifs] = useState(NOTIFICATIONS);
+
+  React.useEffect(() => {
+    if (user) {
+      setNotifs([]);
+    } else {
+      setNotifs(NOTIFICATIONS);
+    }
+  }, [user]);
+
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const unreadCount = notifs.filter(n => !n.read).length;
 
@@ -70,6 +82,13 @@ export default function NotificationsScreen() {
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListEmptyComponent={() => (
+          <View style={styles.empty}>
+            <Feather name="bell-off" size={48} color={colors.border} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No notifications</Text>
+            <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>We'll notify you when there's an update</Text>
+          </View>
+        )}
         renderItem={({ item }) => (
           <Pressable
             style={[
@@ -120,4 +139,7 @@ const styles = StyleSheet.create({
   unreadDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 8 },
   notifBody: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 18, marginBottom: 6 },
   notifTime: { fontSize: 11, fontFamily: 'Inter_400Regular' },
+  empty: { alignItems: 'center', paddingVertical: 80, gap: 10 },
+  emptyTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+  emptySub: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },
 });

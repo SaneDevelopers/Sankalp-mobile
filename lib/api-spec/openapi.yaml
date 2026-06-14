@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,472 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: authRegister
+      tags: [auth]
+      summary: Register a new user
+      description: Creates a new user account with name, optional email/phone, city, and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email or phone already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: authLogin
+      tags: [auth]
+      summary: Login with email or phone
+      description: Authenticates a user using email or phone number as an identifier plus password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: authMe
+      tags: [auth]
+      summary: Get current user profile
+      description: Returns the authenticated user's profile. Requires a valid JWT bearer token.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: authUpdateProfile
+      tags: [auth]
+      summary: Update user profile
+      description: Updates the authenticated user's profile details. Requires a valid JWT bearer token.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileInput"
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          description: Validation or conflict error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email or phone already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /addresses:
+    get:
+      operationId: getAddresses
+      tags: [addresses]
+      summary: Get user's addresses
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of user addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Address"
+    post:
+      operationId: createAddress
+      tags: [addresses]
+      summary: Add a new address
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressInput"
+      responses:
+        "201":
+          description: Address created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+  /addresses/{id}:
+    put:
+      operationId: updateAddress
+      tags: [addresses]
+      summary: Update address or mark as default
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressInput"
+      responses:
+        "200":
+          description: Address updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+    delete:
+      operationId: deleteAddress
+      tags: [addresses]
+      summary: Delete address
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Address deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+  /bookings:
+    get:
+      operationId: getBookings
+      tags: [bookings]
+      summary: Get user's bookings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of user bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Book a ritual
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+  /bookings/{id}/status:
+    put:
+      operationId: updateBookingStatus
+      tags: [bookings]
+      summary: Update booking status (Admin Simulator)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusUpdateInput"
+      responses:
+        "200":
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+  /orders:
+    get:
+      operationId: getOrders
+      tags: [orders]
+      summary: Get user's orders
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of user orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place an order from cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Order placed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{id}:
+    get:
+      operationId: getOrderDetails
+      tags: [orders]
+      summary: Get single order details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{id}/status:
+    put:
+      operationId: updateOrderStatus
+      tags: [orders]
+      summary: Update order status (Admin Simulator)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusUpdateInput"
+      responses:
+        "200":
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /pandits:
+    get:
+      operationId: getPandits
+      tags: [pandits]
+      summary: Get all pandits
+      responses:
+        "200":
+          description: List of all pandits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pandit"
+    post:
+      operationId: createPandit
+      tags: [pandits]
+      summary: Add a new pandit (Admin CRUD)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PanditInput"
+      responses:
+        "201":
+          description: Pandit created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pandit"
+  /pandits/forgot-password:
+    post:
+      operationId: panditsForgotPassword
+      tags: [pandits]
+      summary: Request forgot password reset link for a Pandit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+              required:
+                - email
+      responses:
+        "200":
+          description: Password reset link generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  resetLink:
+                    type: string
+                required:
+                  - success
+                  - resetLink
+        "444":
+          description: Pandit not found
+  /pandits/{id}:
+    put:
+      operationId: updatePandit
+      tags: [pandits]
+      summary: Update pandit details (Admin CRUD)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PanditInput"
+      responses:
+        "200":
+          description: Pandit updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pandit"
+    delete:
+      operationId: deletePandit
+      tags: [pandits]
+      summary: Delete pandit (Admin CRUD)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pandit deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +500,506 @@ components:
           type: string
       required:
         - status
+
+    RegisterInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        city:
+          type: string
+        password:
+          type: string
+          minLength: 8
+      required:
+        - name
+        - password
+
+    LoginInput:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: Email address or phone number
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+        - identifier
+        - password
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+      required:
+        - token
+        - user
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    UpdateProfileInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        city:
+          type: string
+      required:
+        - name
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        label:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        pincode:
+          type: string
+        city:
+          type: string
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - label
+        - name
+        - address
+        - phone
+        - pincode
+        - city
+        - isDefault
+        - createdAt
+        - updatedAt
+
+    AddressInput:
+      type: object
+      properties:
+        label:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        pincode:
+          type: string
+        city:
+          type: string
+        isDefault:
+          type: boolean
+      required:
+        - label
+        - name
+        - address
+        - phone
+        - pincode
+        - city
+        - isDefault
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        bookingId:
+          type: string
+        poojaId:
+          type: string
+        poojaName:
+          type: string
+        panditId:
+          type: string
+        panditName:
+          type: string
+        panditColor:
+          type: string
+        panditInitials:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        amount:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - bookingId
+        - poojaId
+        - poojaName
+        - panditId
+        - panditName
+        - panditColor
+        - panditInitials
+        - date
+        - time
+        - amount
+        - status
+        - createdAt
+        - updatedAt
+
+    BookingInput:
+      type: object
+      properties:
+        poojaId:
+          type: string
+        poojaName:
+          type: string
+        panditId:
+          type: string
+        panditName:
+          type: string
+        panditColor:
+          type: string
+        panditInitials:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        amount:
+          type: integer
+      required:
+        - poojaId
+        - poojaName
+        - panditId
+        - panditName
+        - panditColor
+        - panditInitials
+        - date
+        - time
+        - amount
+
+    OrderItem:
+      type: object
+      properties:
+        name:
+          type: string
+        qty:
+          type: integer
+        price:
+          type: integer
+        unit:
+          type: string
+      required:
+        - name
+        - qty
+        - price
+        - unit
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        orderId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        amount:
+          type: integer
+        delivery:
+          type: integer
+        status:
+          type: string
+        addressText:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - orderId
+        - items
+        - amount
+        - delivery
+        - status
+        - addressText
+        - createdAt
+        - updatedAt
+
+    OrderInput:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        amount:
+          type: integer
+        delivery:
+          type: integer
+        addressText:
+          type: string
+      required:
+        - items
+        - amount
+        - delivery
+        - addressText
+
+    StatusUpdateInput:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Pandit:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: string
+        specialty:
+          type: string
+        category:
+          type: string
+        rating:
+          type: number
+        experience:
+          type: string
+        bookings:
+          type: integer
+        age:
+          type: integer
+        city:
+          type: string
+        address:
+          type: string
+        available:
+          type: string
+        specializations:
+          type: array
+          items:
+            type: string
+        muhurats:
+          type: array
+          items:
+            type: string
+        poojas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              duration:
+                type: string
+              price:
+                type: integer
+              includesPrasad:
+                type: boolean
+            required:
+              - id
+              - name
+              - duration
+              - price
+              - includesPrasad
+        initials:
+          type: string
+        avatarColor:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        imageUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - shortName
+        - specialty
+        - category
+        - rating
+        - experience
+        - bookings
+        - age
+        - city
+        - address
+        - available
+        - specializations
+        - muhurats
+        - poojas
+        - initials
+        - avatarColor
+        - email
+        - password
+        - createdAt
+        - updatedAt
+
+    PanditInput:
+      type: object
+      properties:
+        name:
+          type: string
+        shortName:
+          type: string
+        specialty:
+          type: string
+        category:
+          type: string
+        rating:
+          type: number
+        experience:
+          type: string
+        bookings:
+          type: integer
+        age:
+          type: integer
+        city:
+          type: string
+        address:
+          type: string
+        available:
+          type: string
+        specializations:
+          type: array
+          items:
+            type: string
+        muhurats:
+          type: array
+          items:
+            type: string
+        poojas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              duration:
+                type: string
+              price:
+                type: integer
+              includesPrasad:
+                type: boolean
+            required:
+              - id
+              - name
+              - duration
+              - price
+              - includesPrasad
+        initials:
+          type: string
+        avatarColor:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        imageUrl:
+          type: string
+      required:
+        - name
+        - shortName
+        - specialty
+        - category
+        - rating
+        - experience
+        - bookings
+        - age
+        - city
+        - address
+        - available
+        - specializations
+        - muhurats
+        - poojas
+        - initials
+        - avatarColor
+        - email
+        - password
 

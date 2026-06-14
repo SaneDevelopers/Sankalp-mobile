@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -14,14 +15,26 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function SettingsScreen() {
   const colors = useColors();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const [bookingAlerts, setBookingAlerts] = useState(true);
   const [offerAlerts, setOfferAlerts] = useState(true);
   const [reminderAlerts, setReminderAlerts] = useState(true);
   const [smsAlerts, setSmsAlerts] = useState(false);
+  const [lang, setLang] = useState<'en' | 'hi'>('en');
+
+  React.useEffect(() => {
+    AsyncStorage.getItem('@sankalp:language').then(val => {
+      if (val === 'hi' || val === 'en') {
+        setLang(val as 'en' | 'hi');
+      }
+    });
+  }, []);
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   const SwitchRow = ({ label, sub, value, onChange }: { label: string; sub?: string; value: boolean; onChange: (v: boolean) => void }) => (
@@ -39,7 +52,7 @@ export default function SettingsScreen() {
     </View>
   );
 
-  const LinkRow = ({ label, icon, color, onPress, destructive }: any) => (
+  const LinkRow = ({ label, icon, color, onPress, destructive, value }: any) => (
     <Pressable
       style={[styles.linkRow, { borderBottomColor: colors.border }]}
       onPress={() => { Haptics.selectionAsync(); onPress(); }}
@@ -48,6 +61,7 @@ export default function SettingsScreen() {
         <Feather name={icon} size={18} color={color || colors.primary} />
       </View>
       <Text style={[styles.linkLabel, { color: destructive ? colors.destructive : colors.text }]}>{label}</Text>
+      {value && <Text style={{ color: colors.mutedForeground, fontSize: 14, marginRight: 4, fontFamily: 'Inter_400Regular' }}>{value}</Text>}
       <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
     </Pressable>
   );
@@ -88,7 +102,42 @@ export default function SettingsScreen() {
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <LinkRow label="Edit Profile" icon="user" onPress={() => router.push('/edit-profile' as any)} />
           <LinkRow label="Saved Addresses" icon="map-pin" onPress={() => router.push('/addresses' as any)} />
-          <LinkRow label="Language" icon="globe" onPress={() => {}} />
+          <LinkRow
+            label="Language"
+            icon="globe"
+            value={lang === 'en' ? 'English' : 'Hindi (हिंदी)'}
+            onPress={() => {
+              Alert.alert(
+                lang === 'en' ? 'Select Language' : 'भाषा चुनें',
+                lang === 'en' ? 'Choose your preferred language' : 'अपनी पसंदीदा भाषा चुनें',
+                [
+                  {
+                    text: 'English',
+                    onPress: async () => {
+                      setLang('en');
+                      await AsyncStorage.setItem('@sankalp:language', 'en');
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      // Invalidate home page query or cache to update language immediately
+                      queryClient.clear();
+                    }
+                  },
+                  {
+                    text: 'Hindi (हिंदी)',
+                    onPress: async () => {
+                      setLang('hi');
+                      await AsyncStorage.setItem('@sankalp:language', 'hi');
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      queryClient.clear();
+                    }
+                  },
+                  {
+                    text: lang === 'en' ? 'Cancel' : 'रद्द करें',
+                    style: 'cancel'
+                  }
+                ]
+              );
+            }}
+          />
           <LinkRow label="Change Password" icon="lock" onPress={() => {}} />
         </View>
 
@@ -108,7 +157,17 @@ export default function SettingsScreen() {
         {/* Danger Zone */}
         <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ACCOUNT ACTIONS</Text>
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <LinkRow label="Sign Out" icon="log-out" color={colors.destructive} onPress={() => router.replace('/login' as any)} destructive />
+          <LinkRow
+            label="Sign Out"
+            icon="log-out"
+            color={colors.destructive}
+            onPress={async () => {
+              await AsyncStorage.removeItem('auth_token');
+              queryClient.clear();
+              router.replace('/login' as any);
+            }}
+            destructive
+          />
           <LinkRow label="Delete Account" icon="trash-2" color={colors.destructive} onPress={() => {}} destructive />
         </View>
       </ScrollView>

@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ConfirmedScreen() {
   const colors = useColors();
@@ -19,8 +20,15 @@ export default function ConfirmedScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const [latestBooking, setLatestBooking] = useState<any>(null);
+
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    AsyncStorage.getItem('@sankalp:latest_booking').then(val => {
+      if (val) {
+        setLatestBooking(JSON.parse(val));
+      }
+    });
   }, []);
 
   return (
@@ -45,22 +53,30 @@ export default function ConfirmedScreen() {
         <View style={[styles.detailsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Booking ID</Text>
-            <Text style={[styles.detailValue, { color: colors.text }]}>SKL-8821</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>
+              {latestBooking?.bookingId || 'SKL-8821'}
+            </Text>
           </View>
           <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Pandit</Text>
-            <Text style={[styles.detailValue, { color: colors.text }]}>Acharya Shastri</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>
+              {latestBooking?.panditName || 'Acharya Shastri'}
+            </Text>
           </View>
           <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Date · Time</Text>
-            <Text style={[styles.detailValue, { color: colors.text }]}>15 Oct · 9:30 AM</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>
+              {latestBooking ? `${latestBooking.date} · ${latestBooking.time}` : '15 Oct · 9:30 AM'}
+            </Text>
           </View>
           <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Paid</Text>
-            <Text style={[styles.detailValue, { color: colors.primary, fontFamily: 'Inter_700Bold' }]}>₹3,181</Text>
+            <Text style={[styles.detailValue, { color: colors.primary, fontFamily: 'Inter_700Bold' }]}>
+              ₹{latestBooking ? latestBooking.amount.toLocaleString('en-IN') : '3,181'}
+            </Text>
           </View>
         </View>
       </View>

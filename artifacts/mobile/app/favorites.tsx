@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PANDITS, POOJA_TYPES } from '@/constants/data';
 import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
+import { useAuthMe } from '@workspace/api-client-react';
 
 type Tab = 'pandits' | 'poojas';
 
@@ -23,8 +24,19 @@ export default function FavoritesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>('pandits');
-  const [likedPandits, setLikedPandits] = useState(['1', '3']);
-  const [likedPoojas, setLikedPoojas] = useState(['pt1', 'pt2', 'pt5']);
+
+  const { data: user } = useAuthMe();
+
+  const [likedPandits, setLikedPandits] = useState<string[]>(['1', '3']);
+  const [likedPoojas, setLikedPoojas] = useState<string[]>(['pt1', 'pt2', 'pt5']);
+
+  React.useEffect(() => {
+    if (user) {
+      setLikedPandits([]);
+      setLikedPoojas([]);
+    }
+  }, [user]);
+
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   const savedPandits = PANDITS.filter(p => likedPandits.includes(p.id));

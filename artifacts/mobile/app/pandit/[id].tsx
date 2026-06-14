@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PANDITS } from '@/constants/data';
 import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
+import { useGetPandits } from '@workspace/api-client-react';
 
 export default function PanditDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,7 +26,8 @@ export default function PanditDetailScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const pandit = PANDITS.find(p => p.id === id) ?? PANDITS[0];
+  const { data: pandits = [] } = useGetPandits();
+  const pandit = pandits.find(p => p.id.toString() === id) ?? PANDITS.find(p => p.id === id) ?? PANDITS[0];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -34,7 +36,7 @@ export default function PanditDetailScreen() {
         {/* Hero Photo */}
         <View style={styles.heroContainer}>
           <Image
-            source={PANDIT_IMAGES[pandit.id]}
+            source={PANDIT_IMAGES[pandit.id.toString()] ?? PANDIT_IMAGES['1']}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -70,7 +72,20 @@ export default function PanditDetailScreen() {
               <Text style={[styles.rating, { color: colors.text }]}>{pandit.rating}</Text>
             </View>
           </View>
-          <Text style={[styles.specialty, { color: colors.mutedForeground }]}>{pandit.specialty}</Text>
+          <Text style={[styles.specialty, { color: colors.mutedForeground, marginBottom: 8 }]}>{pandit.specialty}</Text>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Feather name="map-pin" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: colors.mutedForeground }}>
+                From {pandit.city}
+              </Text>
+            </View>
+            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+            <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: colors.mutedForeground }}>
+              Age: {pandit.age} Yrs
+            </Text>
+          </View>
         </View>
 
         {/* Stats */}
