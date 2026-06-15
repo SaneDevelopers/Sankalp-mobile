@@ -7,6 +7,7 @@ import {
   StyleSheet,
   useWindowDimensions,
   ImageBackground,
+  Platform,
 } from 'react-native';
 
 // Video dimensions
@@ -65,6 +66,8 @@ export default function SplashScreen() {
       source={require('../assets/images/sankalp_bg.jpg')}
       style={styles.container}
       resizeMode="cover"
+      // Prevent browser scroll/bounce on touch drag
+      onTouchMove={Platform.OS === 'web' ? (e) => e.preventDefault() : undefined}
     >
       <Video
         ref={videoRef}
@@ -125,6 +128,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#caba9c',
+    ...(Platform.OS === 'web' && {
+      height: '100vh',
+      width: '100vw',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      overflow: 'hidden',
+      touchAction: 'none',
+      userSelect: 'none',
+    }),
   },
   blendTop: {
     position: 'absolute',
