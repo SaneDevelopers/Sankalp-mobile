@@ -18,7 +18,14 @@ import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 import { useGetPandits } from '@workspace/api-client-react';
 
-const FILTERS = ['ALL', 'VEDIC', 'ASTROLOGY', 'HAVAN'];
+import { useLanguage } from '@/context/LanguageContext';
+
+const FILTERS = [
+  { key: 'ALL', translationKey: 'filterAll' },
+  { key: 'VEDIC', translationKey: 'filterVedic' },
+  { key: 'ASTROLOGY', translationKey: 'filterAstrology' },
+  { key: 'HAVAN', translationKey: 'filterHavan' },
+];
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 
 export default function PanditsScreen() {
@@ -26,6 +33,7 @@ export default function PanditsScreen() {
   const insets = useSafeAreaInsets();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const { t, f } = useLanguage();
 
   const { data: dbPandits = [] } = useGetPandits();
   const panditsList = dbPandits.length > 0 ? dbPandits : PANDITS;
@@ -35,9 +43,9 @@ export default function PanditsScreen() {
     : panditsList.filter(p => p.category.toUpperCase() === activeFilter || p.specialty.toUpperCase().includes(activeFilter));
 
   const getAvailLabel = (available: string) => {
-    if (available === 'today') return { label: 'AVAILABLE TODAY', color: colors.success };
-    if (available === 'tomorrow') return { label: 'TOMORROW', color: colors.orange };
-    return { label: 'NEXT WEEK', color: colors.mutedForeground };
+    if (available === 'today') return { label: t('availableToday'), color: colors.success };
+    if (available === 'tomorrow') return { label: t('tomorrow'), color: colors.orange };
+    return { label: t('nextWeek'), color: colors.mutedForeground };
   };
 
   return (
@@ -47,29 +55,29 @@ export default function PanditsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={colors.primary} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Trusted Pandits</Text>
+        <Text style={[styles.headerTitle, { color: colors.primary, fontFamily: f('bold') }]}>{t('trustedPandits')}</Text>
         <View style={{ width: 36 }} />
       </View>
 
       {/* Filters */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        {FILTERS.map(f => (
+        {FILTERS.map(item => (
           <Pressable
-            key={f}
+            key={item.key}
             onPress={() => {
               Haptics.selectionAsync();
-              setActiveFilter(f);
+              setActiveFilter(item.key);
             }}
             style={[
               styles.filterTab,
-              activeFilter === f && { backgroundColor: colors.primary },
+              activeFilter === item.key && { backgroundColor: colors.primary },
             ]}
           >
             <Text style={[
               styles.filterText,
-              { color: activeFilter === f ? '#FFFFFF' : colors.mutedForeground },
+              { color: activeFilter === item.key ? '#FFFFFF' : colors.mutedForeground, fontFamily: f('semibold') },
             ]}>
-              {f}
+              {t(item.translationKey)}
             </Text>
           </Pressable>
         ))}
@@ -98,21 +106,21 @@ export default function PanditsScreen() {
                 resizeMode="cover"
               />
               <View style={styles.info}>
-                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
-                <Text style={[styles.specialty, { color: colors.mutedForeground }]}>{item.specialty} · {item.experience}</Text>
+                <Text style={[styles.name, { color: colors.text, fontFamily: f('bold') }]} numberOfLines={1}>{item.name}</Text>
+                <Text style={[styles.specialty, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t(item.specialty)} · {t(item.experience)}</Text>
                 <View style={styles.row}>
                   <Feather name="map-pin" size={11} color={colors.mutedForeground} />
-                  <Text style={[styles.city, { color: colors.mutedForeground }]}>{item.city}</Text>
+                  <Text style={[styles.city, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t(item.city)}</Text>
                 </View>
                 <View style={styles.availRow}>
                   <View style={[styles.dot, { backgroundColor: avail.color }]} />
-                  <Text style={[styles.availText, { color: avail.color }]}>{avail.label}</Text>
+                  <Text style={[styles.availText, { color: avail.color, fontFamily: f('semibold') }]}>{avail.label}</Text>
                 </View>
               </View>
               <View style={styles.rightCol}>
                 <View style={styles.ratingRow}>
                   <Feather name="star" size={12} color={colors.gold} />
-                  <Text style={[styles.rating, { color: colors.text }]}>{item.rating}</Text>
+                  <Text style={[styles.rating, { color: colors.text, fontFamily: f('bold') }]}>{item.rating}</Text>
                 </View>
                 <Pressable
                   style={[styles.bookBtn, { backgroundColor: colors.primary }]}
@@ -121,7 +129,7 @@ export default function PanditsScreen() {
                     router.push(`/book/${item.id}` as any);
                   }}
                 >
-                  <Text style={styles.bookBtnText}>BOOK</Text>
+                  <Text style={[styles.bookBtnText, { fontFamily: f('bold') }]}>{t('bookBtn')}</Text>
                 </Pressable>
               </View>
             </Pressable>

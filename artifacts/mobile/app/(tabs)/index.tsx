@@ -19,105 +19,7 @@ import { BESTSELLER_ITEMS, FEATURED_POOJAS, PANDITS } from '@/constants/data';
 import { FESTIVAL_BANNER, PANDIT_IMAGES, STORE_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 import { useAuthMe } from '@workspace/api-client-react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQueryClient } from '@tanstack/react-query';
-
-const T = {
-  en: {
-    namaste: "NAMASTE",
-    titleLine1: "Auspicious",
-    titleLine2: "Beginnings",
-    searchPlaceholder: "Search poojas, pandits...",
-    festivalSpecial: "FESTIVAL SPECIAL",
-    festivalTitleLine1: "Diwali Lakshmi",
-    festivalTitleLine2: "Pooja",
-    festivalSub: "Book before Oct 28 · Save 20%",
-    bookNow: "BOOK NOW",
-    sacredServices: "Sacred Services",
-    pooja: "Pooja",
-    poojaSub: "50+ rituals",
-    havan: "Havan",
-    havanSub: "Sacred fire rituals",
-    featuredPoojas: "Featured Poojas",
-    viewAll: "VIEW ALL",
-    bestsellerTitle: "Bestseller Pooja Samagri",
-    bestsellerSub: "Most ordered ritual essentials",
-    bookBtn: "BOOK",
-    guest: "GUEST",
-    // Data translation mapping
-    "Satyanarayan Katha": "Satyanarayan Katha",
-    "Griha Pravesh": "Griha Pravesh",
-    "Navagraha Shanti": "Navagraha Shanti",
-    "Rudra Abhishek": "Rudra Abhishek",
-    "1.5 Hrs": "1.5 Hrs",
-    "2 Hrs": "2 Hrs",
-    "1 Hr": "1 Hr",
-    "2.5 Hrs": "2.5 Hrs",
-    "Complete Havan Kit": "Complete Havan Kit",
-    "Brass Pooja Thali": "Brass Pooja Thali",
-    "Sandalwood Agarbatti": "Sandalwood Agarbatti",
-    "Rudraksh Mala": "Rudraksh Mala",
-    "Panchamrit Kit": "Panchamrit Kit",
-    "Pure Cow Ghee": "Pure Cow Ghee",
-    "100% organic · 750g": "100% organic · 750g",
-    "Set of 7 items": "Set of 7 items",
-    "Pack of 40 sticks": "Pack of 40 sticks",
-    "108 beads · 5 Mukhi": "108 beads · 5 Mukhi",
-    "Ready to use": "Ready to use",
-    "500ml · Pure A2": "500ml · Pure A2",
-    "🏆 Bestseller": "🏆 Bestseller",
-    "⭐ Popular": "⭐ Popular",
-    "✨ Trending": "✨ Trending",
-    "🔥 Top Pick": "🔥 Top Pick",
-  },
-  hi: {
-    namaste: "नमस्ते",
-    titleLine1: "शुभ",
-    titleLine2: "शुरुआत",
-    searchPlaceholder: "पूजा, पंडित खोजें...",
-    festivalSpecial: "त्यौहार विशेष",
-    festivalTitleLine1: "दीवाली लक्ष्मी",
-    festivalTitleLine2: "पूजा",
-    festivalSub: "28 अक्टूबर से पहले बुक करें · 20% बचाएं",
-    bookNow: "अभी बुक करें",
-    sacredServices: "पवित्र सेवाएँ",
-    pooja: "पूजा",
-    poojaSub: "50+ अनुष्ठान",
-    havan: "हवन",
-    havanSub: "पवित्र अग्नि अनुष्ठान",
-    featuredPoojas: "विशेष पूजाएँ",
-    viewAll: "सभी देखें",
-    bestsellerTitle: "बेस्टसेलर पूजा सामग्री",
-    bestsellerSub: "सबसे अधिक ऑर्डर किए जाने वाले अनुष्ठान",
-    bookBtn: "बुक करें",
-    guest: "अतिथि",
-    // Data translation mapping
-    "Satyanarayan Katha": "सत्यनारायण कथा",
-    "Griha Pravesh": "गृह प्रवेश",
-    "Navagraha Shanti": "नवग्रह शांति",
-    "Rudra Abhishek": "रुद्राभिषेक",
-    "1.5 Hrs": "1.5 घंटे",
-    "2 Hrs": "2 घंटे",
-    "1 Hr": "1 घंटा",
-    "2.5 Hrs": "2.5 घंटे",
-    "Complete Havan Kit": "सम्पूर्ण हवन किट",
-    "Brass Pooja Thali": "पीतल पूजा थाली",
-    "Sandalwood Agarbatti": "चंदन अगरबत्ती",
-    "Rudraksh Mala": "रुद्राक्ष माला",
-    "Panchamrit Kit": "पंचामृत किट",
-    "Pure Cow Ghee": "शुद्ध गाय का घी",
-    "100% organic · 750g": "100% जैविक · 750 ग्राम",
-    "Set of 7 items": "7 वस्तुओं का सेट",
-    "Pack of 40 sticks": "40 स्टिक्स का पैक",
-    "108 beads · 5 Mukhi": "108 मनके · 5 मुखी",
-    "Ready to use": "तैयार किट",
-    "500ml · Pure A2": "500 मि.ली. · शुद्ध A2",
-    "🏆 Bestseller": "🏆 बेस्टसेलर",
-    "⭐ Popular": "⭐ लोकप्रिय",
-    "✨ Trending": "✨ ट्रेंडिंग",
-    "🔥 Top Pick": "🔥 शीर्ष विकल्प",
-  }
-};
+import { useLanguage } from '@/context/LanguageContext';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 70 : 52;
 
@@ -125,59 +27,19 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [lang, setLang] = useState<'en' | 'hi'>('en');
-  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const { lang, setLang, t, f } = useLanguage();
+  const topPadding = Platform.OS === 'web' ? 12 : insets.top;
 
-  const loadLang = async () => {
-    const val = await AsyncStorage.getItem('@sankalp:language');
-    if (val === 'hi' || val === 'en') {
-      setLang(val as 'en' | 'hi');
-    }
-  };
-
-  React.useEffect(() => {
-    loadLang();
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadLang();
-    });
-    return unsubscribe;
-  }, [navigation]);
-
-  const handleLanguageChange = async (newLang: 'en' | 'hi') => {
+  const handleLanguageChange = (newLang: 'en' | 'hi') => {
     if (newLang === lang) return;
     Haptics.selectionAsync();
     setLang(newLang);
-    await AsyncStorage.setItem('@sankalp:language', newLang);
-    queryClient.clear();
   };
 
   const { data: user } = useAuthMe();
-
-  const t = (key: string) => {
-    const dict = T[lang] || T['en'];
-    return (dict as any)[key] || key;
-  };
-
-  const f = (style: 'regular' | 'medium' | 'semibold' | 'bold') => {
-    const hiMap = {
-      regular: 'Poppins_400Regular',
-      medium: 'Poppins_500Medium',
-      semibold: 'Poppins_600SemiBold',
-      bold: 'Poppins_700Bold'
-    };
-    const enMap = {
-      regular: 'Inter_400Regular',
-      medium: 'Inter_500Medium',
-      semibold: 'Inter_600SemiBold',
-      bold: 'Inter_700Bold'
-    };
-    return lang === 'hi' ? hiMap[style] : enMap[style];
-  };
-
-  const displayName = user?.name ? user.name.toUpperCase() : t('guest');
   const avatarLetter = user?.name ? user.name[0].toUpperCase() : "G";
+  const displayName = user?.name ? user.name.toUpperCase() : t('guest');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -244,7 +106,7 @@ export default function HomeScreen() {
               <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: f('semibold'), textAlign: 'right' }]}>{t('namaste')}, {displayName}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <Feather name="map-pin" size={10} color={colors.primary} />
-                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>Lucknow, Uttar Pradesh</Text>
+                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>{t('location')}</Text>
               </View>
             </View>
           </View>
@@ -255,7 +117,7 @@ export default function HomeScreen() {
           <Feather name="search" size={18} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.text, fontFamily: f('regular') }]}
-            placeholder={t("Search poojas, pandits...")}
+            placeholder={t("searchPlaceholder")}
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -271,12 +133,12 @@ export default function HomeScreen() {
           <View style={styles.festivalOverlay}>
             <View style={styles.festivalBadge}>
               <Feather name="star" size={10} color={colors.gold} />
-              <Text style={[styles.festivalBadgeText, { color: colors.gold, fontFamily: f('semibold') }]}>{t("FESTIVAL SPECIAL")}</Text>
+              <Text style={[styles.festivalBadgeText, { color: colors.gold, fontFamily: f('semibold') }]}>{t("festivalSpecial")}</Text>
             </View>
             <Text style={[styles.festivalTitle, { fontFamily: f('bold') }]}>
-              {t("Diwali Lakshmi")}{'\n'}{t("Pooja")}
+              {t("festivalTitleLine1")}{'\n'}{t("festivalTitleLine2")}
             </Text>
-            <Text style={[styles.festivalSub, { fontFamily: f('regular') }]}>{t("Book before Oct 28 · Save 20%")}</Text>
+            <Text style={[styles.festivalSub, { fontFamily: f('regular') }]}>{t("festivalSub")}</Text>
             <Pressable
               style={[styles.festivalBtn, { backgroundColor: colors.orange }]}
               onPress={() => {
@@ -284,7 +146,7 @@ export default function HomeScreen() {
                 router.push('/poojas' as any);
               }}
             >
-              <Text style={[styles.festivalBtnText, { fontFamily: f('bold') }]}>{t("BOOK NOW")}</Text>
+              <Text style={[styles.festivalBtnText, { fontFamily: f('bold') }]}>{t("bookNow")}</Text>
             </Pressable>
           </View>
           <View style={styles.omOverlay}>
@@ -294,7 +156,7 @@ export default function HomeScreen() {
 
         {/* Sacred Services — Pooja & Havan only */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t("Sacred Services")}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t("sacredServices")}</Text>
         </View>
         <View style={styles.servicesRow}>
           {/* Pooja Card */}
@@ -310,8 +172,8 @@ export default function HomeScreen() {
               <View style={[styles.serviceIconBig, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
                 <Feather name="sun" size={26} color="#FFFFFF" />
               </View>
-              <Text style={[styles.serviceCardName, { fontFamily: f('bold') }]}>{t("Pooja")}</Text>
-              <Text style={[styles.serviceCardSub, { fontFamily: f('regular') }]}>{t("50+ rituals")}</Text>
+              <Text style={[styles.serviceCardName, { fontFamily: f('bold') }]}>{t("pooja")}</Text>
+              <Text style={[styles.serviceCardSub, { fontFamily: f('regular') }]}>{t("poojaSub")}</Text>
               <View style={styles.serviceArrow}>
                 <Feather name="arrow-right" size={14} color="#FFFFFF" />
               </View>
@@ -330,8 +192,8 @@ export default function HomeScreen() {
               <View style={[styles.serviceIconBig, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                 <Feather name="zap" size={26} color="#FFFFFF" />
               </View>
-              <Text style={[styles.serviceCardName, { fontFamily: f('bold') }]}>{t("Havan")}</Text>
-              <Text style={[styles.serviceCardSub, { fontFamily: f('regular') }]}>{t("Sacred fire rituals")}</Text>
+              <Text style={[styles.serviceCardName, { fontFamily: f('bold') }]}>{t("havan")}</Text>
+              <Text style={[styles.serviceCardSub, { fontFamily: f('regular') }]}>{t("havanSub")}</Text>
               <View style={styles.serviceArrow}>
                 <Feather name="arrow-right" size={14} color="#FFFFFF" />
               </View>
@@ -344,9 +206,9 @@ export default function HomeScreen() {
 
         {/* Featured Poojas */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t("Featured Poojas")}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t("featuredPoojas")}</Text>
           <Pressable onPress={() => router.push('/poojas' as any)}>
-            <Text style={[styles.viewAll, { color: colors.accent, fontFamily: f('semibold') }]}>{t("VIEW ALL")}</Text>
+            <Text style={[styles.viewAll, { color: colors.accent, fontFamily: f('semibold') }]}>{t("viewAll")}</Text>
           </Pressable>
         </View>
         <FlatList
@@ -374,7 +236,7 @@ export default function HomeScreen() {
                       router.push(`/book/${item.panditId}` as any);
                     }}
                   >
-                    <Text style={[styles.bookBtnText, { fontFamily: f('bold') }]}>{t("BOOK")}</Text>
+                    <Text style={[styles.bookBtnText, { fontFamily: f('bold') }]}>{t("bookBtn")}</Text>
                   </Pressable>
                 </View>
               </Pressable>
@@ -386,11 +248,11 @@ export default function HomeScreen() {
         {/* Bestseller Pooja Samagri */}
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <View>
-            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t("Bestseller Pooja Samagri")}</Text>
-            <Text style={[styles.sectionSub, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t("Most ordered ritual essentials")}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t("bestsellerTitle")}</Text>
+            <Text style={[styles.sectionSub, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t("bestsellerSub")}</Text>
           </View>
           <Pressable onPress={() => router.push('/(tabs)/store' as any)}>
-            <Text style={[styles.viewAll, { color: colors.accent, fontFamily: f('semibold') }]}>{t("VIEW ALL")}</Text>
+            <Text style={[styles.viewAll, { color: colors.accent, fontFamily: f('semibold') }]}>{t("viewAll")}</Text>
           </Pressable>
         </View>
         <FlatList
@@ -427,7 +289,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 7,
   },
   greeting: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 2, marginBottom: 4 },
   title: { fontSize: 28, fontFamily: 'Inter_700Bold', lineHeight: 34 },

@@ -18,7 +18,13 @@ import { useColors } from '@/hooks/useColors';
 import { useAuthMe, useGetBookings, getGetBookingsQueryKey } from '@workspace/api-client-react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FILTERS = ['ALL', 'UPCOMING', 'COMPLETED'];
+import { useLanguage } from '@/context/LanguageContext';
+
+const FILTERS = [
+  { key: 'ALL', translationKey: 'filterAll' },
+  { key: 'UPCOMING', translationKey: 'filterUpcoming' },
+  { key: 'COMPLETED', translationKey: 'filterCompleted' },
+];
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 
 export default function BookingsScreen() {
@@ -27,6 +33,7 @@ export default function BookingsScreen() {
   const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const { t, f } = useLanguage();
 
   const { data: user } = useAuthMe();
   const { data: apiBookings = [], refetch } = useGetBookings({
@@ -65,30 +72,30 @@ export default function BookingsScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPadding + 16, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Booking History</Text>
-          <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>Your sacred journey · {filtered.length} rituals</Text>
+          <Text style={[styles.headerTitle, { color: colors.primary, fontFamily: f('bold') }]}>{t('bookingHistory')}</Text>
+          <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t('sacredJourney')} · {filtered.length} {t('rituals')}</Text>
         </View>
       </View>
 
       {/* Filters */}
       <View style={[styles.filtersContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        {FILTERS.map(f => (
+        {FILTERS.map(item => (
           <Pressable
-            key={f}
+            key={item.key}
             onPress={() => {
               Haptics.selectionAsync();
-              setActiveFilter(f);
+              setActiveFilter(item.key);
             }}
             style={[
               styles.filterTab,
-              activeFilter === f && { backgroundColor: colors.primary },
+              activeFilter === item.key && { backgroundColor: colors.primary },
             ]}
           >
             <Text style={[
               styles.filterText,
-              { color: activeFilter === f ? '#FFFFFF' : colors.mutedForeground },
+              { color: activeFilter === item.key ? '#FFFFFF' : colors.mutedForeground, fontFamily: f('semibold') },
             ]}>
-              {f}
+              {t(item.translationKey)}
             </Text>
           </Pressable>
         ))}
@@ -103,11 +110,12 @@ export default function BookingsScreen() {
         ListEmptyComponent={() => (
           <View style={styles.empty}>
             <Feather name="calendar" size={48} color={colors.border} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No bookings found</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: f('medium') }]}>{t('noBookings')}</Text>
           </View>
         )}
         renderItem={({ item }) => {
           const statusStyle = getStatusStyle(item.status as any);
+          const displayStatus = item.status === 'upcoming' ? t('filterUpcoming') : t('filterCompleted');
           return (
             <Pressable
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -118,29 +126,29 @@ export default function BookingsScreen() {
           >
               <View style={styles.cardRow}>
                 <View style={[styles.avatar, { backgroundColor: item.panditColor }]}>
-                  <Text style={styles.avatarText}>{item.panditInitials}</Text>
+                  <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{item.panditInitials}</Text>
                 </View>
                 <View style={styles.info}>
                   <View style={styles.nameRow}>
-                    <Text style={[styles.poojaName, { color: colors.text }]} numberOfLines={1}>{item.poojaName}</Text>
+                    <Text style={[styles.poojaName, { color: colors.text, fontFamily: f('bold') }]} numberOfLines={1}>{t(item.poojaName)}</Text>
                     <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                      <Text style={[styles.statusText, { color: statusStyle.color }]}>
-                        {item.status.toUpperCase()}
+                      <Text style={[styles.statusText, { color: statusStyle.color, fontFamily: f('bold') }]}>
+                        {displayStatus}
                       </Text>
                     </View>
                   </View>
-                  <Text style={[styles.panditName, { color: colors.mutedForeground }]}>{item.panditName}</Text>
+                  <Text style={[styles.panditName, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{item.panditName}</Text>
                   <View style={styles.dateRow}>
                     <Feather name="clock" size={11} color={colors.mutedForeground} />
-                    <Text style={[styles.dateText, { color: colors.mutedForeground }]}>
+                    <Text style={[styles.dateText, { color: colors.mutedForeground, fontFamily: f('regular') }]}>
                       {item.date} · {item.time}
                     </Text>
                   </View>
                 </View>
               </View>
               <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-                <Text style={[styles.bookingId, { color: colors.mutedForeground }]}>#{item.bookingId}</Text>
-                <Text style={[styles.amount, { color: colors.primary }]}>₹{item.amount.toLocaleString('en-IN')}</Text>
+                <Text style={[styles.bookingId, { color: colors.mutedForeground, fontFamily: f('regular') }]}>#{item.bookingId}</Text>
+                <Text style={[styles.amount, { color: colors.primary, fontFamily: f('bold') }]}>₹{item.amount.toLocaleString('en-IN')}</Text>
               </View>
             </Pressable>
           );

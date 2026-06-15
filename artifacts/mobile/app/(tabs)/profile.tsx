@@ -24,15 +24,17 @@ import { useNavigation } from 'expo-router';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 
+import { useLanguage } from '@/context/LanguageContext';
+
 const MENU_ITEMS = [
-  { id: 'm1', label: 'Edit Profile', icon: 'user', route: '/edit-profile' },
-  { id: 'm2', label: 'My Bookings', icon: 'calendar', route: '/(tabs)/bookings' },
-  { id: 'm3', label: 'Saved Pandits & Poojas', icon: 'heart', route: '/favorites' },
-  { id: 'm4', label: 'Order History', icon: 'package', route: '/order-history' },
-  { id: 'm5', label: 'Saved Addresses', icon: 'map-pin', route: '/addresses' },
-  { id: 'm6', label: 'Notifications', icon: 'bell', route: '/notifications' },
-  { id: 'm7', label: 'Help & Support', icon: 'help-circle', route: '/help' },
-  { id: 'm8', label: 'Settings', icon: 'settings', route: '/settings' },
+  { id: 'm1', labelKey: 'editProfile', icon: 'user', route: '/edit-profile' },
+  { id: 'm2', labelKey: 'myBookings', icon: 'calendar', route: '/(tabs)/bookings' },
+  { id: 'm3', labelKey: 'savedPandits', icon: 'heart', route: '/favorites' },
+  { id: 'm4', labelKey: 'orderHistory', icon: 'package', route: '/order-history' },
+  { id: 'm5', labelKey: 'savedAddresses', icon: 'map-pin', route: '/addresses' },
+  { id: 'm6', labelKey: 'notifications', icon: 'bell', route: '/notifications' },
+  { id: 'm7', labelKey: 'helpSupport', icon: 'help-circle', route: '/help' },
+  { id: 'm8', labelKey: 'settings', icon: 'settings', route: '/settings' },
 ];
 
 export default function ProfileScreen() {
@@ -40,6 +42,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const navigation = useNavigation();
+  const { t, f } = useLanguage();
 
   const { data: user } = useAuthMe();
   const { data: bookings = [], refetch: refetchBookings } = useGetBookings({
@@ -70,7 +73,7 @@ export default function ProfileScreen() {
     return unsubscribe;
   }, [navigation, user]);
 
-  const displayName = user?.name || "Guest Devotee";
+  const displayName = user?.name || t('guest');
   const displayContact = user?.phone || user?.email || "Sign in to sync your profile";
   const avatarLetter = displayName[0].toUpperCase();
 
@@ -110,28 +113,28 @@ export default function ProfileScreen() {
         </View>
         <View style={[styles.avatarRing, { borderColor: colors.gold }]}>
           <View style={[styles.avatar, { backgroundColor: colors.orange }]}>
-            <Text style={styles.avatarText}>{avatarLetter}</Text>
+            <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
           </View>
         </View>
-        <Text style={styles.devoteeLabel}>DEVOTEE</Text>
-        <Text style={styles.name}>{displayName}</Text>
-        <Text style={styles.phone}>{displayContact}</Text>
+        <Text style={[styles.devoteeLabel, { fontFamily: f('semibold') }]}>{t('namaste')}</Text>
+        <Text style={[styles.name, { fontFamily: f('bold') }]}>{displayName}</Text>
+        <Text style={[styles.phone, { fontFamily: f('regular') }]}>{displayContact}</Text>
 
         {/* Stats */}
         <View style={[styles.statsRow, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{statsBookings}</Text>
-            <Text style={styles.statLabel}>BOOKINGS</Text>
+            <Text style={[styles.statValue, { fontFamily: f('bold') }]}>{statsBookings}</Text>
+            <Text style={[styles.statLabel, { fontFamily: f('semibold') }]}>{t('totalBookings').toUpperCase()}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{statsSpent}</Text>
-            <Text style={styles.statLabel}>SPENT</Text>
+            <Text style={[styles.statValue, { fontFamily: f('bold') }]}>{statsSpent}</Text>
+            <Text style={[styles.statLabel, { fontFamily: f('semibold') }]}>{t('spent').toUpperCase()}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{statsPandits}</Text>
-            <Text style={styles.statLabel}>PANDITS</Text>
+            <Text style={[styles.statValue, { fontFamily: f('bold') }]}>{statsPandits}</Text>
+            <Text style={[styles.statLabel, { fontFamily: f('semibold') }]}>{t('trustedPandits').split(' ')[1]?.toUpperCase() || t('trustedPandits').toUpperCase()}</Text>
           </View>
         </View>
       </View>
@@ -153,7 +156,7 @@ export default function ProfileScreen() {
             <View style={[styles.menuIconWrap, { backgroundColor: colors.primary + '15' }]}>
               <Feather name={item.icon as any} size={18} color={colors.primary} />
             </View>
-            <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+            <Text style={[styles.menuLabel, { color: colors.text, fontFamily: f('medium') }]}>{t(item.labelKey)}</Text>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
           </Pressable>
         ))}
@@ -168,7 +171,7 @@ export default function ProfileScreen() {
         }}
       >
         <Feather name="bar-chart-2" size={18} color="#FFFFFF" />
-        <Text style={styles.adminBtnText}>Admin Console</Text>
+        <Text style={[styles.adminBtnText, { fontFamily: f('semibold') }]}>{t('adminConsole')}</Text>
         <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.7)" />
       </Pressable>
     </ScrollView>

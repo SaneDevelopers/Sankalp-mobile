@@ -31,6 +31,8 @@ const UTENSIL_ICONS: Record<string, string> = {
   ut4: 'wind', ut5: 'circle', ut6: 'disc',
 };
 
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function StoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -38,6 +40,7 @@ export default function StoreScreen() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'samagri' | 'utensils'>('samagri');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const { t, f } = useLanguage();
 
   const featured = STORE_ITEMS.find(i => i.featured)!;
   const samagriItems = STORE_ITEMS.filter(i => !i.featured);
@@ -52,12 +55,12 @@ export default function StoreScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPadding + 16, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Samagri Store</Text>
+        <Text style={[styles.headerTitle, { color: colors.primary, fontFamily: f('bold') }]}>{t('samagriStore')}</Text>
         <Pressable onPress={() => router.push('/cart' as any)} style={styles.cartBtn}>
           <Feather name="shopping-cart" size={22} color={colors.primary} />
           {itemCount > 0 && (
             <View style={[styles.badge, { backgroundColor: colors.orange }]}>
-              <Text style={styles.badgeText}>{itemCount}</Text>
+              <Text style={[styles.badgeText, { fontFamily: f('bold') }]}>{itemCount}</Text>
             </View>
           )}
         </Pressable>
@@ -68,8 +71,8 @@ export default function StoreScreen() {
         <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="search" size={18} color={colors.mutedForeground} />
           <TextInput
-            style={[styles.searchInput, { color: colors.text, fontFamily: 'Inter_400Regular' }]}
-            placeholder="Search items..."
+            style={[styles.searchInput, { color: colors.text, fontFamily: f('regular') }]}
+            placeholder={t('searchStore')}
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -82,12 +85,12 @@ export default function StoreScreen() {
             <Image source={STORE_IMAGES[featured.id]} style={styles.featuredImage} resizeMode="cover" />
             <View style={styles.featuredInfo}>
               <View style={[styles.premiumBadge, { backgroundColor: colors.gold + '20' }]}>
-                <Text style={[styles.premiumText, { color: colors.gold }]}>★ PREMIUM PICK</Text>
+                <Text style={[styles.premiumText, { color: colors.gold, fontFamily: f('bold') }]}>★ {t('featuredItem')}</Text>
               </View>
-              <Text style={[styles.featuredName, { color: colors.text }]}>{featured.name}</Text>
-              <Text style={[styles.featuredUnit, { color: colors.mutedForeground }]}>{featured.unit}</Text>
+              <Text style={[styles.featuredName, { color: colors.text, fontFamily: f('bold') }]}>{t(featured.name)}</Text>
+              <Text style={[styles.featuredUnit, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t(featured.unit)}</Text>
               <View style={styles.featuredFooter}>
-                <Text style={[styles.featuredPrice, { color: colors.primary }]}>₹{featured.price.toLocaleString('en-IN')}</Text>
+                <Text style={[styles.featuredPrice, { color: colors.primary, fontFamily: f('bold') }]}>₹{featured.price.toLocaleString('en-IN')}</Text>
                 <Pressable
                   style={[styles.addBtn, { backgroundColor: colors.primary }]}
                   onPress={() => {
@@ -95,7 +98,7 @@ export default function StoreScreen() {
                     addItem({ id: featured.id, name: featured.name, price: featured.price, unit: featured.unit });
                   }}
                 >
-                  <Text style={styles.addBtnText}>ADD TO CART</Text>
+                  <Text style={[styles.addBtnText, { fontFamily: f('bold') }]}>{t('addToCart')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -112,8 +115,8 @@ export default function StoreScreen() {
                 setActiveTab('samagri');
               }}
             >
-              <Text style={[styles.tabText, { color: activeTab === 'samagri' ? colors.primary : colors.mutedForeground }]}>
-                Pooja Samagri
+              <Text style={[styles.tabText, { color: activeTab === 'samagri' ? colors.primary : colors.mutedForeground, fontFamily: f('semibold') }]}>
+                {t('storeSamagri')}
               </Text>
             </Pressable>
             <Pressable
@@ -123,8 +126,8 @@ export default function StoreScreen() {
                 setActiveTab('utensils');
               }}
             >
-              <Text style={[styles.tabText, { color: activeTab === 'utensils' ? colors.primary : colors.mutedForeground }]}>
-                Pooja Utensils
+              <Text style={[styles.tabText, { color: activeTab === 'utensils' ? colors.primary : colors.mutedForeground, fontFamily: f('semibold') }]}>
+                {t('storeUtensils')}
               </Text>
             </Pressable>
           </View>
@@ -135,8 +138,8 @@ export default function StoreScreen() {
           <>
             {!search && (
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Trending Samagri</Text>
-                <Text style={[styles.viewAll, { color: colors.accent }]}>VIEW ALL</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t('bestsellerTitle')}</Text>
+                <Text style={[styles.viewAll, { color: colors.accent, fontFamily: f('semibold') }]}>{t('viewAll')}</Text>
               </View>
             )}
             <View style={styles.grid}>
@@ -150,10 +153,10 @@ export default function StoreScreen() {
                   }}
                 >
                   <Image source={STORE_IMAGES[item.id]} style={styles.gridImage} resizeMode="cover" />
-                  <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={2}>{item.name}</Text>
-                  <Text style={[styles.gridUnit, { color: colors.mutedForeground }]} numberOfLines={1}>{item.unit}</Text>
+                  <Text style={[styles.gridName, { color: colors.text, fontFamily: f('semibold') }]} numberOfLines={2}>{t(item.name)}</Text>
+                  <Text style={[styles.gridUnit, { color: colors.mutedForeground, fontFamily: f('regular') }]} numberOfLines={1}>{t(item.unit)}</Text>
                   <View style={styles.gridFooter}>
-                    <Text style={[styles.gridPrice, { color: colors.primary }]}>₹{item.price.toLocaleString('en-IN')}</Text>
+                    <Text style={[styles.gridPrice, { color: colors.primary, fontFamily: f('bold') }]}>₹{item.price.toLocaleString('en-IN')}</Text>
                     <Pressable
                       style={[styles.gridAddBtn, { backgroundColor: colors.primary }]}
                       onPress={() => {
@@ -176,10 +179,10 @@ export default function StoreScreen() {
             {!search && (
               <View style={styles.sectionHeader}>
                 <View>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Pooja Utensils</Text>
-                  <Text style={[styles.sectionSub, { color: colors.mutedForeground }]}>Authentic ritual vessels & tools</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: f('bold') }]}>{t('storeUtensils')}</Text>
+                  <Text style={[styles.sectionSub, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t('bestsellerSub')}</Text>
                 </View>
-                <Text style={[styles.viewAll, { color: colors.accent }]}>VIEW ALL</Text>
+                <Text style={[styles.viewAll, { color: colors.accent, fontFamily: f('semibold') }]}>{t('viewAll')}</Text>
               </View>
             )}
             <View style={styles.utensilsList}>
@@ -196,12 +199,12 @@ export default function StoreScreen() {
                     <Feather name={UTENSIL_ICONS[item.id] as any} size={22} color={UTENSIL_COLORS[item.id]} />
                   </View>
                   <View style={styles.utensilInfo}>
-                    <Text style={[styles.utensilName, { color: colors.text }]}>{item.name}</Text>
-                    <Text style={[styles.utensilUnit, { color: colors.mutedForeground }]}>{item.unit}</Text>
-                    <Text style={[styles.utensilDesc, { color: colors.mutedForeground }]}>{item.description}</Text>
+                    <Text style={[styles.utensilName, { color: colors.text, fontFamily: f('semibold') }]}>{t(item.name)}</Text>
+                    <Text style={[styles.utensilUnit, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t(item.unit)}</Text>
+                    <Text style={[styles.utensilDesc, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t(item.description)}</Text>
                   </View>
                   <View style={styles.utensilRight}>
-                    <Text style={[styles.utensilPrice, { color: colors.primary }]}>₹{item.price.toLocaleString('en-IN')}</Text>
+                    <Text style={[styles.utensilPrice, { color: colors.primary, fontFamily: f('bold') }]}>₹{item.price.toLocaleString('en-IN')}</Text>
                     <Pressable
                       style={[styles.utensilAddBtn, { backgroundColor: colors.primary }]}
                       onPress={() => {
