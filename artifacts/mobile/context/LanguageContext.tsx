@@ -11,6 +11,10 @@ export const TRANSLATIONS = {
     guest: 'GUEST',
     titleLine1: 'Auspicious',
     titleLine2: 'Beginnings',
+    auspicious: 'Auspicious',
+    morning: 'Morning',
+    afternoon: 'Afternoon',
+    evening: 'Evening',
     location: 'Lucknow, Uttar Pradesh',
 
     // Home sections
@@ -75,6 +79,10 @@ export const TRANSLATIONS = {
     spent: 'Spent',
     memberSince: 'Member since',
     adminConsole: 'Admin Console',
+    dashboard: 'Dashboard',
+    orders: 'Orders',
+    bookings: 'Bookings',
+    pandits: 'Pandits',
 
     // Common
     back: 'Back',
@@ -129,6 +137,10 @@ export const TRANSLATIONS = {
     guest: 'अतिथि',
     titleLine1: 'शुभ',
     titleLine2: 'शुरुआत',
+    auspicious: 'शुभ',
+    morning: 'प्रभात',
+    afternoon: 'दोपहर',
+    evening: 'संध्या',
     location: 'लखनऊ, उत्तर प्रदेश',
 
     // Home sections
@@ -193,6 +205,10 @@ export const TRANSLATIONS = {
     spent: 'खर्च',
     memberSince: 'सदस्य बने',
     adminConsole: 'एडमिन कंसोल',
+    dashboard: 'डैशबोर्ड',
+    orders: 'ऑर्डर',
+    bookings: 'बुकिंग',
+    pandits: 'पंडित',
 
     // Common
     back: 'वापस',

@@ -19,6 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useColors } from '@/hooks/useColors';
 import { useNotifications } from '@/context/NotificationContext';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   useGetBookings,
   useUpdateBookingStatus,
@@ -35,6 +36,8 @@ const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const BAR_DATA = [65, 40, 80, 55, 90, 70, 45];
 
 const CATEGORIES = ['vedic', 'astrology', 'havan', 'griha'];
+
+const ADMIN_TABS = ['dashboard', 'orders', 'bookings', 'pandits'] as const;
 
 interface PanditFormData {
   id?: number;
@@ -63,12 +66,19 @@ export default function AdminScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { lang, setLang, t, f } = useLanguage();
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'bookings' | 'pandits'>('dashboard');
   const [bookingSearch, setBookingSearch] = useState('');
+
+  const handleLanguageChange = (newLang: 'en' | 'hi') => {
+    if (newLang === lang) return;
+    Haptics.selectionAsync();
+    setLang(newLang);
+  };
 
   // React Query queries
   const { data: bookings = [], isLoading: loadingBookings } = useGetBookings();
@@ -424,11 +434,45 @@ export default function AdminScreen() {
       <View style={[styles.adminHeader, { paddingTop: topPadding }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.adminConsoleLabel}>ADMIN CONSOLE</Text>
-            <Text style={styles.adminTitle}>Sankalp Control</Text>
+            <Text style={[styles.adminConsoleLabel, { fontFamily: f('bold') }]}>{t('adminConsole').toUpperCase()}</Text>
+            <Text style={[styles.adminTitle, { fontFamily: f('bold') }]}>Sankalp Control</Text>
           </View>
-          <View style={[styles.adminAvatar, { backgroundColor: colors.gold }]}>
-            <Text style={styles.adminAvatarText}>A</Text>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[styles.langToggleContainer, { borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+              <Pressable
+                onPress={() => handleLanguageChange('hi')}
+                style={[
+                  styles.langToggleItem,
+                  lang === 'hi' && { backgroundColor: colors.gold }
+                ]}
+              >
+                <Text style={[
+                  styles.langToggleText,
+                  { color: '#FFFFFF', fontFamily: f('bold') }
+                ]}>
+                  HI
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleLanguageChange('en')}
+                style={[
+                  styles.langToggleItem,
+                  lang === 'en' && { backgroundColor: colors.gold }
+                ]}
+              >
+                <Text style={[
+                  styles.langToggleText,
+                  { color: '#FFFFFF', fontFamily: f('bold') }
+                ]}>
+                  ENG
+                </Text>
+              </Pressable>
+            </View>
+
+            <View style={[styles.adminAvatar, { backgroundColor: colors.gold }]}>
+              <Text style={[styles.adminAvatarText, { fontFamily: f('bold') }]}>A</Text>
+            </View>
           </View>
         </View>
 
@@ -437,30 +481,30 @@ export default function AdminScreen() {
           <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
             <View style={styles.statCardHeader}>
               <Feather name="package" size={14} color={colors.gold} />
-              <Text style={styles.statCardLabel}>ORDERS</Text>
+              <Text style={[styles.statCardLabel, { fontFamily: f('semibold') }]}>{t('totalOrders').toUpperCase()}</Text>
             </View>
-            <Text style={styles.statCardValue}>{orders.length}</Text>
+            <Text style={[styles.statCardValue, { fontFamily: f('bold') }]}>{orders.length}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
             <View style={styles.statCardHeader}>
               <Feather name="calendar" size={14} color={colors.gold} />
-              <Text style={styles.statCardLabel}>BOOKINGS</Text>
+              <Text style={[styles.statCardLabel, { fontFamily: f('semibold') }]}>{t('totalBookings').toUpperCase()}</Text>
             </View>
-            <Text style={styles.statCardValue}>{bookings.length}</Text>
+            <Text style={[styles.statCardValue, { fontFamily: f('bold') }]}>{bookings.length}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
             <View style={styles.statCardHeader}>
               <Feather name="users" size={14} color={colors.gold} />
-              <Text style={styles.statCardLabel}>PANDITS</Text>
+              <Text style={[styles.statCardLabel, { fontFamily: f('semibold') }]}>{(t('trustedPandits').split(' ')[1] || t('trustedPandits')).toUpperCase()}</Text>
             </View>
-            <Text style={styles.statCardValue}>{pandits.length}</Text>
+            <Text style={[styles.statCardValue, { fontFamily: f('bold') }]}>{pandits.length}</Text>
           </View>
         </View>
       </View>
 
       {/* Navigation tabs */}
       <View style={styles.tabRow}>
-        {(['dashboard', 'orders', 'bookings', 'pandits'] as const).map(tab => (
+        {ADMIN_TABS.map(tab => (
           <Pressable
             key={tab}
             style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
@@ -469,8 +513,8 @@ export default function AdminScreen() {
               Haptics.selectionAsync();
             }}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.toUpperCase()}
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive, { fontFamily: f('bold') }]}>
+              {t(tab).toUpperCase()}
             </Text>
           </Pressable>
         ))}
@@ -1197,6 +1241,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backBtnText: { fontSize: 14, fontFamily: 'Inter_500Medium' },
+
+  langToggleContainer: {
+    flexDirection: 'row',
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 2,
+    alignItems: 'center',
+  },
+  langToggleItem: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 32,
+  },
+  langToggleText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+  },
 
   // Modal styles
   modalOverlay: {

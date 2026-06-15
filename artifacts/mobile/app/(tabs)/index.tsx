@@ -41,6 +41,18 @@ export default function HomeScreen() {
   const avatarLetter = user?.name ? user.name[0].toUpperCase() : "G";
   const displayName = user?.name ? user.name.toUpperCase() : t('guest');
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return { line1: t('auspicious'), line2: t('morning') };
+    } else if (hour >= 12 && hour < 17) {
+      return { line1: t('auspicious'), line2: t('afternoon') };
+    } else {
+      return { line1: t('auspicious'), line2: t('evening') };
+    }
+  };
+  const greetingText = getGreeting();
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -52,7 +64,7 @@ export default function HomeScreen() {
           {/* Left: Big Title */}
           <View style={{ flex: 1, marginRight: 8, justifyContent: 'flex-end' }}>
             <Text style={[styles.title, { color: colors.primary, fontFamily: f('bold') }]} numberOfLines={2} adjustsFontSizeToFit>
-              {t('titleLine1')}{'\n'}{t('titleLine2')}
+              {greetingText.line1}{'\n'}{greetingText.line2}
             </Text>
           </View>
 
