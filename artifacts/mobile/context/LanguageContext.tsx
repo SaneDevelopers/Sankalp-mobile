@@ -11,7 +11,7 @@ export const TRANSLATIONS = {
     guest: 'GUEST',
     titleLine1: 'Auspicious',
     titleLine2: 'Beginnings',
-    auspicious: 'Auspicious',
+    auspicious: 'Good',
     morning: 'Morning',
     afternoon: 'Afternoon',
     evening: 'Evening',
