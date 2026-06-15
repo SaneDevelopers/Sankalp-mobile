@@ -83,6 +83,14 @@ export const TRANSLATIONS = {
     orders: 'Orders',
     bookings: 'Bookings',
     pandits: 'Pandits',
+    adminLoginTitle: 'Admin Portal Login',
+    adminEmailLabel: 'ADMIN EMAIL',
+    adminPasswordLabel: 'PASSWORD',
+    adminLoginBtn: 'Sign In',
+    adminInvalidCreds: 'Invalid email or password',
+    webOnlyTitle: 'Web Access Only',
+    webOnlyDesc: 'The Admin Console is restricted to desktop web browsers for operational security and optimization. Please log in from a computer.',
+    adminLogout: 'Logout',
 
     // Common
     back: 'Back',
@@ -209,6 +217,14 @@ export const TRANSLATIONS = {
     orders: 'ऑर्डर',
     bookings: 'बुकिंग',
     pandits: 'पंडित',
+    adminLoginTitle: 'एडमिन पोर्टल लॉगिन',
+    adminEmailLabel: 'एडमिन ईमेल',
+    adminPasswordLabel: 'पासवर्ड',
+    adminLoginBtn: 'साइन इन करें',
+    adminInvalidCreds: 'अमान्य ईमेल या पासवर्ड',
+    webOnlyTitle: 'केवल वेब एक्सेस',
+    webOnlyDesc: 'परिचालन सुरक्षा और अनुकूलन के लिए एडमिन कंसोल केवल कंप्यूटर वेब ब्राउज़र पर उपलब्ध है। कृपया कंप्यूटर से लॉगिन करें।',
+    adminLogout: 'लॉगआउट',
 
     // Common
     back: 'वापस',

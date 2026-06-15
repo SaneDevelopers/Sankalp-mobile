@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColors } from '@/hooks/useColors';
 import { useNotifications } from '@/context/NotificationContext';
@@ -67,6 +68,44 @@ export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { lang, setLang, t, f } = useLanguage();
+
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminLoginError, setAdminLoginError] = useState('');
+
+  React.useEffect(() => {
+    if (Platform.OS === 'web') {
+      AsyncStorage.getItem('@sankalp:admin_authenticated').then(val => {
+        if (val === 'true') {
+          setIsAdminAuthenticated(true);
+        }
+        setIsCheckingAuth(false);
+      });
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, []);
+
+  const handleAdminLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setAdminLoginError('');
+    const ADMIN_EMAIL = (process.env.EXPO_PUBLIC_ADMIN_EMAIL ?? '').toLowerCase();
+    const ADMIN_PASSWORD = process.env.EXPO_PUBLIC_ADMIN_PASSWORD ?? '';
+    if (adminEmail.trim().toLowerCase() === ADMIN_EMAIL && adminPassword === ADMIN_PASSWORD) {
+      setIsAdminAuthenticated(true);
+      await AsyncStorage.setItem('@sankalp:admin_authenticated', 'true');
+    } else {
+      setAdminLoginError(t('adminInvalidCreds'));
+    }
+  };
+
+  const handleAdminLogout = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsAdminAuthenticated(false);
+    await AsyncStorage.removeItem('@sankalp:admin_authenticated');
+  };
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -428,6 +467,164 @@ export default function AdminScreen() {
     }
   };
 
+  if (isCheckingAuth) {
+    return (
+      <View style={[styles.centeredContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // 1. Mobile restriction screen
+  if (Platform.OS !== 'web') {
+    return (
+      <View style={[styles.centeredContainer, { backgroundColor: colors.background, padding: 24 }]}>
+        {/* Mobile Header / Toggle */}
+        <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 30, alignSelf: 'center' }]}>
+          <Pressable
+            onPress={() => handleLanguageChange('hi')}
+            style={[
+              styles.langToggleItem,
+              lang === 'hi' && { backgroundColor: colors.primary }
+            ]}
+          >
+            <Text style={[
+              styles.langToggleText,
+              { color: lang === 'hi' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+            ]}>
+              HI
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleLanguageChange('en')}
+            style={[
+              styles.langToggleItem,
+              lang === 'en' && { backgroundColor: colors.primary }
+            ]}
+          >
+            <Text style={[
+              styles.langToggleText,
+              { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+            ]}>
+              ENG
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={[styles.warningCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.warningIconWrap, { backgroundColor: colors.primary + '15' }]}>
+            <Feather name="monitor" size={40} color={colors.primary} />
+          </View>
+          <Text style={[styles.warningTitle, { color: colors.text, fontFamily: f('bold') }]}>
+            {t('webOnlyTitle')}
+          </Text>
+          <Text style={[styles.warningDesc, { color: colors.mutedForeground, fontFamily: f('regular') }]}>
+            {t('webOnlyDesc')}
+          </Text>
+          <Pressable
+            style={[styles.warningBtn, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/profile');
+              }
+            }}
+          >
+            <Text style={[styles.warningBtnText, { fontFamily: f('bold') }]}>{t('back')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // 2. Admin Login gate (strictly on Web)
+  if (!isAdminAuthenticated) {
+    return (
+      <View style={[styles.centeredContainer, { backgroundColor: colors.background, padding: 20 }]}>
+        {/* Language selector above login card */}
+        <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 20 }]}>
+          <Pressable
+            onPress={() => handleLanguageChange('hi')}
+            style={[
+              styles.langToggleItem,
+              lang === 'hi' && { backgroundColor: colors.primary }
+            ]}
+          >
+            <Text style={[
+              styles.langToggleText,
+              { color: lang === 'hi' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+            ]}>
+              HI
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleLanguageChange('en')}
+            style={[
+              styles.langToggleItem,
+              lang === 'en' && { backgroundColor: colors.primary }
+            ]}
+          >
+            <Text style={[
+              styles.langToggleText,
+              { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+            ]}>
+              ENG
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={[styles.loginCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.loginTitle, { color: colors.primary, fontFamily: f('bold') }]}>
+            {t('adminLoginTitle')}
+          </Text>
+
+          {adminLoginError ? (
+            <View style={[styles.errorBox, { backgroundColor: '#FEE2E2', borderColor: '#FECACA', marginBottom: 16 }]}>
+              <Feather name="alert-circle" size={16} color="#DC2626" />
+              <Text style={[styles.errorText, { fontFamily: f('medium') }]}>{adminLoginError}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('adminEmailLabel')}</Text>
+            <TextInput
+              style={[styles.inputField, { color: colors.text, borderColor: colors.border, fontFamily: f('regular') }]}
+              placeholder="Enter admin email"
+              placeholderTextColor={colors.mutedForeground}
+              value={adminEmail}
+              onChangeText={setAdminEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('adminPasswordLabel')}</Text>
+            <TextInput
+              style={[styles.inputField, { color: colors.text, borderColor: colors.border, fontFamily: f('regular') }]}
+              placeholder="••••••••"
+              placeholderTextColor={colors.mutedForeground}
+              secureTextEntry
+              value={adminPassword}
+              onChangeText={setAdminPassword}
+              autoCapitalize="none"
+            />
+          </View>
+
+          <Pressable
+            style={[styles.loginBtn, { backgroundColor: colors.primary }]}
+            onPress={handleAdminLogin}
+          >
+            <Text style={[styles.loginBtnText, { fontFamily: f('bold') }]}>
+              {t('adminLoginBtn')}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
       {/* Header */}
@@ -469,6 +666,22 @@ export default function AdminScreen() {
                 </Text>
               </Pressable>
             </View>
+
+            <Pressable
+              onPress={handleAdminLogout}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.2)',
+              }}
+            >
+              <Feather name="log-out" size={16} color="#FFFFFF" />
+            </Pressable>
 
             <View style={[styles.adminAvatar, { backgroundColor: colors.gold }]}>
               <Text style={[styles.adminAvatarText, { fontFamily: f('bold') }]}>A</Text>
@@ -1356,4 +1569,70 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveBtnText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'Inter_700Bold' },
+
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  warningCard: {
+    width: '100%',
+    maxWidth: 400,
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+  },
+  warningIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  warningTitle: {
+    fontSize: 20,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  warningDesc: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  warningBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  warningBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  loginCard: {
+    width: '100%',
+    maxWidth: 400,
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1.5,
+  },
+  loginTitle: {
+    fontSize: 22,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  loginBtn: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  loginBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+  },
 });
