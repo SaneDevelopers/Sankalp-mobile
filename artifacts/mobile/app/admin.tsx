@@ -973,8 +973,8 @@ export default function AdminScreen() {
                       <Text style={styles.actionBtnText}>Edit Details</Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.actionBtn, { backgroundColor: colors.primary }]}
-                      onPress={() => handleForgotPassword(p.email, p.id)}
+                      style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: (resettingPasswordId === p.id || !p.email) ? 0.45 : 1 }]}
+                      onPress={() => handleForgotPassword(p.email ?? '', p.id)}
                       disabled={resettingPasswordId === p.id || !p.email}
                     >
                       {resettingPasswordId === p.id ? (
@@ -1312,7 +1312,7 @@ const styles = StyleSheet.create({
   },
   headerTop: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
   },
@@ -1493,6 +1493,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
+    ...(Platform.OS === 'web' ? {
+      position: 'fixed' as any,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw' as any,
+      height: '100vh' as any,
+      zIndex: 99999,
+    } : {}),
   },
   modalContent: {
     borderTopLeftRadius: 24,
