@@ -1,0 +1,31 @@
+========================================================================
+                      Sankalp Run & Start Commands
+========================================================================
+
+Use the commands below in separate terminal tabs to run the frontend 
+and backend server locally in development.
+
+------------------------------------------------------------------------
+1. RUN FRONTEND (Expo Packager - Port 8081)
+------------------------------------------------------------------------
+Open a terminal in the root folder (F:\client\Sankalp-mobile) and run:
+
+[PowerShell or CMD]
+npx pnpm@9 --filter @workspace/mobile exec expo start --clear
+
+------------------------------------------------------------------------
+2. RUN BACKEND (API Express Server - Port 5000)
+------------------------------------------------------------------------
+Open a new, separate terminal in the root folder and run the command 
+matching your terminal shell:
+
+[For PowerShell (Default in VS Code)]
+$env:PORT="5000"; $env:DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres"; $env:JWT_SECRET="sankalp-dev-secret-key-123456"; npx pnpm@9 --filter @workspace/api-server run dev
+
+[For Command Prompt (cmd.exe)]
+set PORT=5000
+set DATABASE_URL=postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres
+set JWT_SECRET=sankalp-dev-secret-key-123456
+npx pnpm@9 --filter @workspace/api-server run dev
+
+========================================================================

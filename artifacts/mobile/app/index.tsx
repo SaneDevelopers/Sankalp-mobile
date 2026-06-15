@@ -66,8 +66,6 @@ export default function SplashScreen() {
       source={require('../assets/images/sankalp_bg.jpg')}
       style={styles.container}
       resizeMode="cover"
-      // Prevent browser scroll/bounce on touch drag
-      onTouchMove={Platform.OS === 'web' ? (e) => e.preventDefault() : undefined}
     >
       <Video
         ref={videoRef}
@@ -137,7 +135,7 @@ const styles = StyleSheet.create({
       overflow: 'hidden',
       touchAction: 'none',
       userSelect: 'none',
-    }),
+    } as any),
   },
   blendTop: {
     position: 'absolute',

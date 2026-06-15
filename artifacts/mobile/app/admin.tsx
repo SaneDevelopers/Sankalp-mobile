@@ -12,6 +12,7 @@ import {
   Modal,
   TextInput,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -68,6 +69,9 @@ export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { lang, setLang, t, f } = useLanguage();
+  const { width: screenWidth } = useWindowDimensions();
+
+  const isDesktopWeb = Platform.OS === 'web' && screenWidth >= 1024;
 
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -76,7 +80,7 @@ export default function AdminScreen() {
   const [adminLoginError, setAdminLoginError] = useState('');
 
   React.useEffect(() => {
-    if (Platform.OS === 'web') {
+    if (isDesktopWeb) {
       AsyncStorage.getItem('@sankalp:admin_authenticated').then(val => {
         if (val === 'true') {
           setIsAdminAuthenticated(true);
@@ -86,13 +90,14 @@ export default function AdminScreen() {
     } else {
       setIsCheckingAuth(false);
     }
-  }, []);
+  }, [isDesktopWeb]);
 
   const handleAdminLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setAdminLoginError('');
     const ADMIN_EMAIL = (process.env.EXPO_PUBLIC_ADMIN_EMAIL ?? '').toLowerCase();
     const ADMIN_PASSWORD = process.env.EXPO_PUBLIC_ADMIN_PASSWORD ?? '';
+
     if (adminEmail.trim().toLowerCase() === ADMIN_EMAIL && adminPassword === ADMIN_PASSWORD) {
       setIsAdminAuthenticated(true);
       await AsyncStorage.setItem('@sankalp:admin_authenticated', 'true');
@@ -107,8 +112,8 @@ export default function AdminScreen() {
     await AsyncStorage.removeItem('@sankalp:admin_authenticated');
   };
 
-  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
+  const topPadding = isDesktopWeb ? 67 : insets.top;
+  const bottomPadding = isDesktopWeb ? 34 : insets.bottom;
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'bookings' | 'pandits'>('dashboard');
   const [bookingSearch, setBookingSearch] = useState('');
@@ -475,8 +480,8 @@ export default function AdminScreen() {
     );
   }
 
-  // 1. Mobile restriction screen
-  if (Platform.OS !== 'web') {
+  // 1. Mobile & tablet view restriction screen
+  if (!isDesktopWeb) {
     return (
       <View style={[styles.centeredContainer, { backgroundColor: colors.background, padding: 24 }]}>
         {/* Mobile Header / Toggle */}
@@ -596,6 +601,9 @@ export default function AdminScreen() {
               onChangeText={setAdminEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              autoComplete="one-time-code"
+              textContentType="none"
+              importantForAutofill="no"
             />
           </View>
 
@@ -609,6 +617,9 @@ export default function AdminScreen() {
               value={adminPassword}
               onChangeText={setAdminPassword}
               autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="none"
+              importantForAutofill="no"
             />
           </View>
 
@@ -1044,6 +1055,7 @@ export default function AdminScreen() {
                   autoCapitalize="none"
                   autoComplete="off"
                   textContentType="none"
+                  importantForAutofill="no"
                   value={panditForm.email}
                   onChangeText={val => setPanditForm(prev => ({ ...prev, email: val }))}
                 />
@@ -1058,6 +1070,7 @@ export default function AdminScreen() {
                   secureTextEntry
                   autoComplete="off"
                   textContentType="none"
+                  importantForAutofill="no"
                   value={panditForm.password}
                   onChangeText={val => setPanditForm(prev => ({ ...prev, password: val }))}
                 />
