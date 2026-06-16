@@ -66,7 +66,7 @@ export default function HelpScreen() {
         {/* Contact Options */}
         <View style={styles.contactRow}>
           {[
-            { icon: 'message-circle', label: 'Live Chat', color: '#7B1F1F', onPress: () => {} },
+            { icon: 'message-circle', label: 'Live Chat', color: '#7B1F1F', onPress: () => router.push('/contact-support') },
             { icon: 'phone', label: 'Call Us', color: '#D4722A', onPress: () => Linking.openURL('tel:+918800123456') },
             { icon: 'mail', label: 'Email', color: '#C89A3C', onPress: () => Linking.openURL('mailto:support@sankalp.in') },
           ].map(c => (

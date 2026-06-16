@@ -83,6 +83,7 @@ function RootLayoutNav() {
       <Stack.Screen name="edit-profile" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="help" />
+      <Stack.Screen name="contact-support" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="favorites" />
       <Stack.Screen name="addresses" />

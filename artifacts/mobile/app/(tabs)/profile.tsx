@@ -40,6 +40,7 @@ const MENU_ITEMS = [
   { id: 'm5', labelKey: 'savedAddresses', icon: 'map-pin', route: '/addresses' },
   { id: 'm6', labelKey: 'notifications', icon: 'bell', route: '/notifications' },
   { id: 'm7', labelKey: 'helpSupport', icon: 'help-circle', route: '/help' },
+  { id: 'm9', labelKey: 'contactSupport', icon: 'message-square', route: '/contact-support' },
   { id: 'm8', labelKey: 'settings', icon: 'settings', route: '/settings' },
 ];
 
@@ -209,19 +210,6 @@ export default function ProfileScreen() {
           </Pressable>
         ))}
       </View>
-
-      {/* Admin Console */}
-      <Pressable
-        style={[styles.adminBtn, { backgroundColor: colors.primary }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/admin' as any);
-        }}
-      >
-        <Feather name="bar-chart-2" size={18} color="#FFFFFF" />
-        <Text style={[styles.adminBtnText, { fontFamily: f('semibold') }]}>{t('adminConsole')}</Text>
-        <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.7)" />
-      </Pressable>
     </ScrollView>
   );
 }
