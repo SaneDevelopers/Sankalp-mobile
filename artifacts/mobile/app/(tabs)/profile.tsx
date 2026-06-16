@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -152,6 +153,11 @@ export default function ProfileScreen() {
           ) : (
             <View style={[styles.avatar, { backgroundColor: colors.orange }]}>
               <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
+            </View>
+          )}
+          {uploading && (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 44, alignItems: 'center', justifyContent: 'center' }]}>
+              <ActivityIndicator color="#FFFFFF" size="small" />
             </View>
           )}
           <View style={[styles.cameraBadge, { backgroundColor: colors.gold }]}>

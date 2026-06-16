@@ -12,14 +12,22 @@ import {
   Text,
   TextInput,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BESTSELLER_ITEMS, FEATURED_POOJAS, PANDITS } from '@/constants/data';
 import { FESTIVAL_BANNER, PANDIT_IMAGES, STORE_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
-import { useAuthMe } from '@workspace/api-client-react';
+import {
+  useAuthMe,
+  useAuthUpdateProfile,
+  getAuthMeQueryKey,
+} from '@workspace/api-client-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { Image as ExpoImage } from 'expo-image';
+import { useImageUpload } from '@/hooks/useImageUpload';
+import { useQueryClient } from '@tanstack/react-query';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 70 : 52;
 
@@ -38,6 +46,31 @@ export default function HomeScreen() {
   };
 
   const { data: user } = useAuthMe();
+  const queryClient = useQueryClient();
+  const { pickAndUploadImage, uploading } = useImageUpload();
+  const { mutateAsync: updateProfile } = useAuthUpdateProfile();
+
+  const handleUploadProfileImage = async () => {
+    if (!user) {
+      router.push('/(tabs)/profile');
+      return;
+    }
+    const url = await pickAndUploadImage();
+    if (url) {
+      try {
+        await updateProfile({
+          data: {
+            name: user.name,
+            profileImage: url,
+          }
+        });
+        queryClient.invalidateQueries({ queryKey: getAuthMeQueryKey() });
+      } catch (err) {
+        console.error('Error updating profile image:', err);
+      }
+    }
+  };
+
   const avatarLetter = user?.name ? user.name[0].toUpperCase() : "G";
   const displayName = user?.name ? user.name.toUpperCase() : t('guest');
 
@@ -107,9 +140,31 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 style={[styles.avatarBtn, { backgroundColor: colors.primary }]}
-                onPress={() => router.push('/(tabs)/profile')}
+                onPress={handleUploadProfileImage}
+                disabled={uploading}
               >
-                <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
+                <View style={{ width: 40, height: 40, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+                  {user?.profileImage ? (
+                    <ExpoImage
+                      source={{ uri: user.profileImage }}
+                      style={styles.avatarImage}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  ) : (
+                    <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
+                  )}
+                  {uploading && (
+                    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }]}>
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    </View>
+                  )}
+                </View>
+                {user && (
+                  <View style={[styles.cameraBadgeSmall, { backgroundColor: colors.gold }]}>
+                    <Feather name="camera" size={6} color="#FFFFFF" />
+                  </View>
+                )}
               </Pressable>
             </View>
 
@@ -328,6 +383,19 @@ const styles = StyleSheet.create({
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   avatarBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 16 },
+  avatarImage: { width: 40, height: 40, borderRadius: 20 },
+  cameraBadgeSmall: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 20,
     paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1, gap: 10,
