@@ -29,3 +29,14 @@ set JWT_SECRET=sankalp-dev-secret-key-123456
 npx pnpm@9 --filter @workspace/api-server run dev
 
 ========================================================================
+
+------------------------------------------------------------------------
+0. SINGLE COMMAND - RUN EVERYTHING (Recommended)
+------------------------------------------------------------------------
+Opens API server in a new window + Expo in current terminal.
+
+[For PowerShell]
+
+start cmd /k "cd /d F:\client\Sankalp-mobile && set PORT=5000 && set DATABASE_URL=postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres && set JWT_SECRET=sankalp-dev-secret-key-123456 && npx pnpm@9 --filter @workspace/api-server run dev" && npx pnpm@9 --filter @workspace/mobile exec expo start --clear
+
+========================================================================
