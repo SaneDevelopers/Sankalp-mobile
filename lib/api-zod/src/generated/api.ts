@@ -56,6 +56,29 @@ export const AuthLoginResponse = zod.object({
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "city": zod.string().optional(),
+  "profileImage": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * Verifies Google idToken and returns application JWT.
+ * @summary Authenticate with Google
+ */
+export const AuthGoogleBody = zod.object({
+  "idToken": zod.string()
+})
+
+export const AuthGoogleResponse = zod.object({
+  "token": zod.string(),
+  "user": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "city": zod.string().optional(),
+  "profileImage": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 })
@@ -71,6 +94,7 @@ export const AuthMeResponse = zod.object({
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "city": zod.string().optional(),
+  "profileImage": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -86,7 +110,8 @@ export const AuthUpdateProfileBody = zod.object({
   "name": zod.string().min(1),
   "email": zod.string().email().optional(),
   "phone": zod.string().optional(),
-  "city": zod.string().optional()
+  "city": zod.string().optional(),
+  "profileImage": zod.string().nullish()
 })
 
 export const AuthUpdateProfileResponse = zod.object({
@@ -95,6 +120,7 @@ export const AuthUpdateProfileResponse = zod.object({
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "city": zod.string().optional(),
+  "profileImage": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -496,6 +522,81 @@ export const DeletePanditParams = zod.object({
 })
 
 export const DeletePanditResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get list of all store items
+ */
+export const GetStoreItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "unit": zod.string(),
+  "category": zod.string(),
+  "featured": zod.boolean(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "imageUrl": zod.string().nullish()
+})
+export const GetStoreItemsResponse = zod.array(GetStoreItemsResponseItem)
+
+
+/**
+ * @summary Create new store item (Admin only)
+ */
+export const CreateStoreItemBody = zod.object({
+  "name": zod.string(),
+  "price": zod.number(),
+  "unit": zod.string(),
+  "category": zod.string(),
+  "featured": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "imageUrl": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update store item (Admin only)
+ */
+export const UpdateStoreItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateStoreItemBody = zod.object({
+  "name": zod.string(),
+  "price": zod.number(),
+  "unit": zod.string(),
+  "category": zod.string(),
+  "featured": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "imageUrl": zod.string().nullish()
+})
+
+export const UpdateStoreItemResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "unit": zod.string(),
+  "category": zod.string(),
+  "featured": zod.boolean(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "imageUrl": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete store item (Admin only)
+ */
+export const DeleteStoreItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteStoreItemResponse = zod.object({
   "success": zod.boolean()
 })
 

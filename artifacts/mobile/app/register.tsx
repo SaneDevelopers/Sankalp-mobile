@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
 import { useAuthRegister } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { validatePincodeOffline } from '@/constants/data';
 
 export default function RegisterScreen() {
@@ -35,6 +36,7 @@ export default function RegisterScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const queryClient = useQueryClient();
   const registerMutation = useAuthRegister();
 
   const handlePincodeChange = async (pin: string) => {
@@ -121,7 +123,13 @@ export default function RegisterScreen() {
         },
       });
 
+      console.log('[Register] Got token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
       await AsyncStorage.setItem('auth_token', result.token);
+      // Verify the token was actually stored
+      const stored = await AsyncStorage.getItem('auth_token');
+      console.log('[Register] Verified stored token:', stored ? stored.substring(0, 15) + '…' : 'NULL');
+      
+      await queryClient.invalidateQueries();
       router.replace('/(tabs)');
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Registration failed';

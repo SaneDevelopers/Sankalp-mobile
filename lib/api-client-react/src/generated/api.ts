@@ -27,9 +27,11 @@ import type {
   BookingInput,
   DeleteAddress200,
   DeletePandit200,
+  DeleteStoreItem200,
   ErrorResponse,
   ForgotPasswordInput,
   ForgotPasswordResponse,
+  GoogleLoginInput,
   HealthStatus,
   LoginInput,
   Order,
@@ -38,6 +40,8 @@ import type {
   PanditInput,
   RegisterInput,
   StatusUpdateInput,
+  StoreItem,
+  StoreItemInput,
   UpdateProfileInput,
   UserProfile
 } from './api.schemas';
@@ -274,6 +278,78 @@ export const useAuthLogin = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getAuthLoginMutationOptions(options));
+    }
+
+export const getAuthGoogleUrl = () => {
+
+
+
+
+  return `/api/auth/google`
+}
+
+/**
+ * Verifies Google idToken and returns application JWT.
+ * @summary Authenticate with Google
+ */
+export const authGoogle = async (googleLoginInput: GoogleLoginInput, options?: RequestInit): Promise<AuthResponse> => {
+
+  return customFetch<AuthResponse>(getAuthGoogleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      googleLoginInput,)
+  }
+);}
+
+
+
+
+export const getAuthGoogleMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authGoogle>>, TError,{data: BodyType<GoogleLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authGoogle>>, TError,{data: BodyType<GoogleLoginInput>}, TContext> => {
+
+const mutationKey = ['authGoogle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authGoogle>>, {data: BodyType<GoogleLoginInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authGoogle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthGoogleMutationResult = NonNullable<Awaited<ReturnType<typeof authGoogle>>>
+    export type AuthGoogleMutationBody = BodyType<GoogleLoginInput>
+    export type AuthGoogleMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Authenticate with Google
+ */
+export const useAuthGoogle = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authGoogle>>, TError,{data: BodyType<GoogleLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authGoogle>>,
+        TError,
+        {data: BodyType<GoogleLoginInput>},
+        TContext
+      > => {
+      return useMutation(getAuthGoogleMutationOptions(options));
     }
 
 export const getAuthMeUrl = () => {
@@ -1592,5 +1668,295 @@ export const useDeletePandit = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeletePanditMutationOptions(options));
+    }
+
+export const getGetStoreItemsUrl = () => {
+
+
+
+
+  return `/api/store-items`
+}
+
+/**
+ * @summary Get list of all store items
+ */
+export const getStoreItems = async ( options?: RequestInit): Promise<StoreItem[]> => {
+
+  return customFetch<StoreItem[]>(getGetStoreItemsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStoreItemsQueryKey = () => {
+    return [
+    `/api/store-items`
+    ] as const;
+    }
+
+
+export const getGetStoreItemsQueryOptions = <TData = Awaited<ReturnType<typeof getStoreItems>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreItemsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreItems>>> = ({ signal }) => getStoreItems({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStoreItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreItems>>>
+export type GetStoreItemsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get list of all store items
+ */
+
+export function useGetStoreItems<TData = Awaited<ReturnType<typeof getStoreItems>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStoreItemsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateStoreItemUrl = () => {
+
+
+
+
+  return `/api/store-items`
+}
+
+/**
+ * @summary Create new store item (Admin only)
+ */
+export const createStoreItem = async (storeItemInput: StoreItemInput, options?: RequestInit): Promise<StoreItem> => {
+
+  return customFetch<StoreItem>(getCreateStoreItemUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      storeItemInput,)
+  }
+);}
+
+
+
+
+export const getCreateStoreItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreItem>>, TError,{data: BodyType<StoreItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStoreItem>>, TError,{data: BodyType<StoreItemInput>}, TContext> => {
+
+const mutationKey = ['createStoreItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStoreItem>>, {data: BodyType<StoreItemInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStoreItem(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStoreItemMutationResult = NonNullable<Awaited<ReturnType<typeof createStoreItem>>>
+    export type CreateStoreItemMutationBody = BodyType<StoreItemInput>
+    export type CreateStoreItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create new store item (Admin only)
+ */
+export const useCreateStoreItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreItem>>, TError,{data: BodyType<StoreItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStoreItem>>,
+        TError,
+        {data: BodyType<StoreItemInput>},
+        TContext
+      > => {
+      return useMutation(getCreateStoreItemMutationOptions(options));
+    }
+
+export const getUpdateStoreItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/store-items/${id}`
+}
+
+/**
+ * @summary Update store item (Admin only)
+ */
+export const updateStoreItem = async (id: number,
+    storeItemInput: StoreItemInput, options?: RequestInit): Promise<StoreItem> => {
+
+  return customFetch<StoreItem>(getUpdateStoreItemUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      storeItemInput,)
+  }
+);}
+
+
+
+
+export const getUpdateStoreItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreItem>>, TError,{id: number;data: BodyType<StoreItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStoreItem>>, TError,{id: number;data: BodyType<StoreItemInput>}, TContext> => {
+
+const mutationKey = ['updateStoreItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStoreItem>>, {id: number;data: BodyType<StoreItemInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateStoreItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStoreItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateStoreItem>>>
+    export type UpdateStoreItemMutationBody = BodyType<StoreItemInput>
+    export type UpdateStoreItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update store item (Admin only)
+ */
+export const useUpdateStoreItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreItem>>, TError,{id: number;data: BodyType<StoreItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStoreItem>>,
+        TError,
+        {id: number;data: BodyType<StoreItemInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateStoreItemMutationOptions(options));
+    }
+
+export const getDeleteStoreItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/store-items/${id}`
+}
+
+/**
+ * @summary Delete store item (Admin only)
+ */
+export const deleteStoreItem = async (id: number, options?: RequestInit): Promise<DeleteStoreItem200> => {
+
+  return customFetch<DeleteStoreItem200>(getDeleteStoreItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteStoreItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStoreItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteStoreItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStoreItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteStoreItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStoreItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStoreItem>>>
+
+    export type DeleteStoreItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete store item (Admin only)
+ */
+export const useDeleteStoreItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStoreItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStoreItemMutationOptions(options));
     }
 

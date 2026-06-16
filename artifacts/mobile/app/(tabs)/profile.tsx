@@ -13,8 +13,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
+import { useImageUpload } from '@/hooks/useImageUpload';
+import { Image } from 'expo-image';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useAuthMe,
+  getAuthMeQueryKey,
+  useAuthUpdateProfile,
   useGetBookings,
   getGetBookingsQueryKey,
   useGetOrders,
@@ -43,8 +48,29 @@ export default function ProfileScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const navigation = useNavigation();
   const { t, f } = useLanguage();
+  const queryClient = useQueryClient();
+  const { pickAndUploadImage, uploading } = useImageUpload();
+  const { mutateAsync: updateProfile } = useAuthUpdateProfile();
 
   const { data: user } = useAuthMe();
+
+  const handleUploadProfileImage = async () => {
+    if (!user) return;
+    const url = await pickAndUploadImage();
+    if (url) {
+      try {
+        await updateProfile({
+          data: {
+            name: user.name,
+            profileImage: url,
+          }
+        });
+        queryClient.invalidateQueries({ queryKey: getAuthMeQueryKey() });
+      } catch (err) {
+        console.error('Error updating profile image:', err);
+      }
+    }
+  };
   const { data: bookings = [], refetch: refetchBookings } = useGetBookings({
     query: {
       enabled: !!user,
@@ -111,11 +137,27 @@ export default function ProfileScreen() {
         <View style={styles.omContainer}>
           <Text style={styles.omSymbol}>ॐ</Text>
         </View>
-        <View style={[styles.avatarRing, { borderColor: colors.gold }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.orange }]}>
-            <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
+        <Pressable 
+          style={[styles.avatarRing, { borderColor: colors.gold }]}
+          onPress={handleUploadProfileImage}
+          disabled={uploading}
+        >
+          {user?.profileImage ? (
+            <Image 
+              source={{ uri: user.profileImage }} 
+              style={styles.avatarImage} 
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: colors.orange }]}>
+              <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
+            </View>
+          )}
+          <View style={[styles.cameraBadge, { backgroundColor: colors.gold }]}>
+            <Feather name="camera" size={10} color="#FFFFFF" />
           </View>
-        </View>
+        </Pressable>
         <Text style={[styles.devoteeLabel, { fontFamily: f('semibold') }]}>{t('namaste')}</Text>
         <Text style={[styles.name, { fontFamily: f('bold') }]}>{displayName}</Text>
         <Text style={[styles.phone, { fontFamily: f('regular') }]}>{displayContact}</Text>
@@ -209,6 +251,23 @@ const styles = StyleSheet.create({
     borderRadius: 38,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   avatarText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 28 },
   devoteeLabel: {

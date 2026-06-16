@@ -56,11 +56,9 @@ const getBaseUrl = () => {
 
 setBaseUrl(getBaseUrl());
 setAuthTokenGetter(async () => {
-  const isAdmin = await AsyncStorage.getItem('@sankalp:admin_authenticated');
-  if (isAdmin === 'true') {
-    return 'admin-bypass-secret-2026';
-  }
-  return AsyncStorage.getItem('auth_token');
+  const token = await AsyncStorage.getItem('auth_token');
+  console.log('[AuthTokenGetter] token from storage:', token ? token.substring(0, 15) + '…' : 'NULL');
+  return token;
 });
 
 function RootLayoutNav() {

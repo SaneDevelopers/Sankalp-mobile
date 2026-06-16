@@ -29,12 +29,17 @@ export interface LoginInput {
   password: string;
 }
 
+export interface GoogleLoginInput {
+  idToken: string;
+}
+
 export interface UserProfile {
   id: number;
   name: string;
   email?: string;
   phone?: string;
   city?: string;
+  profileImage?: string | null;
   createdAt: string;
 }
 
@@ -53,6 +58,7 @@ export interface UpdateProfileInput {
   email?: string;
   phone?: string;
   city?: string;
+  profileImage?: string | null;
 }
 
 export interface Address {
@@ -212,11 +218,38 @@ export interface ForgotPasswordResponse {
   resetLink: string;
 }
 
+export interface StoreItem {
+  id: number;
+  name: string;
+  price: number;
+  unit: string;
+  category: string;
+  featured: boolean;
+  description?: string | null;
+  color?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface StoreItemInput {
+  name: string;
+  price: number;
+  unit: string;
+  category: string;
+  featured?: boolean;
+  description?: string | null;
+  color?: string | null;
+  imageUrl?: string | null;
+}
+
 export type DeleteAddress200 = {
   success: boolean;
 };
 
 export type DeletePandit200 = {
+  success: boolean;
+};
+
+export type DeleteStoreItem200 = {
   success: boolean;
 };
 

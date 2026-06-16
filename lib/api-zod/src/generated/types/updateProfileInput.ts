@@ -12,4 +12,5 @@ export interface UpdateProfileInput {
   email?: string;
   phone?: string;
   city?: string;
+  profileImage?: string | null;
 }

@@ -10,6 +10,7 @@ export type AuthTokenGetter = () => Promise<string | null> | string | null;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
+const __DEV_LOG__ = typeof __DEV__ !== 'undefined' ? __DEV__ : process?.env?.NODE_ENV !== 'production';
 
 // ---------------------------------------------------------------------------
 // Module-level configuration
@@ -353,9 +354,14 @@ export async function customFetch<T = unknown>(
   // Authorization header has been explicitly provided.
   if (_authTokenGetter && !headers.has("authorization")) {
     const token = await _authTokenGetter();
+    if (__DEV_LOG__) {
+      console.log(`[customFetch] ${method} ${resolveUrl(input)} | token=${token ? token.substring(0, 15) + '…' : 'NULL'}`);
+    }
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
     }
+  } else if (__DEV_LOG__ && !_authTokenGetter) {
+    console.log(`[customFetch] ${method} ${resolveUrl(input)} | _authTokenGetter is NOT set`);
   }
 
   const requestInfo = { method, url: resolveUrl(input) };

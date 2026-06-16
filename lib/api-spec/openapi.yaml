@@ -91,6 +91,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /auth/google:
+    post:
+      operationId: authGoogle
+      tags: [auth]
+      summary: Authenticate with Google
+      description: Verifies Google idToken and returns application JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleLoginInput"
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /auth/me:
     get:
       operationId: authMe
@@ -472,6 +498,84 @@ paths:
                 required:
                   - success
 
+  /store-items:
+    get:
+      operationId: getStoreItems
+      tags: [store]
+      summary: Get list of all store items
+      responses:
+        "200":
+          description: List of store items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoreItem"
+    post:
+      operationId: createStoreItem
+      tags: [store]
+      summary: Create new store item (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreItemInput"
+      responses:
+        "201":
+          description: Store item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreItem"
+  /store-items/{id}:
+    put:
+      operationId: updateStoreItem
+      tags: [store]
+      summary: Update store item (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreItemInput"
+      responses:
+        "200":
+          description: Store item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreItem"
+    delete:
+      operationId: deleteStoreItem
+      tags: [store]
+      summary: Delete store item (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Store item deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+
 components:
   securitySchemes:
     bearerAuth:
@@ -522,6 +626,14 @@ components:
         - identifier
         - password
 
+    GoogleLoginInput:
+      type: object
+      properties:
+        idToken:
+          type: string
+      required:
+        - idToken
+
     UserProfile:
       type: object
       properties:
@@ -535,6 +647,9 @@ components:
           type: string
         city:
           type: string
+        profileImage:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -575,6 +690,9 @@ components:
           type: string
         city:
           type: string
+        profileImage:
+          type: string
+          nullable: true
       required:
         - name
 
@@ -1008,4 +1126,64 @@ components:
       required:
         - success
         - resetLink
+
+    StoreItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: integer
+        unit:
+          type: string
+        category:
+          type: string
+        featured:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - price
+        - unit
+        - category
+        - featured
+
+    StoreItemInput:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: integer
+        unit:
+          type: string
+        category:
+          type: string
+        featured:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - name
+        - price
+        - unit
+        - category
 

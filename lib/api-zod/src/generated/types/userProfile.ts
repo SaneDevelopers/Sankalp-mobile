@@ -12,5 +12,6 @@ export interface UserProfile {
   email?: string;
   phone?: string;
   city?: string;
+  profileImage?: string | null;
   createdAt: Date;
 }

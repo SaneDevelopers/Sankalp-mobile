@@ -77,7 +77,7 @@ export default function OnboardingScreen() {
       {/* Skip */}
       <Pressable
         style={[styles.skipBtn, { paddingTop: topPadding + 16 }]}
-        onPress={() => router.replace('/(tabs)')}
+        onPress={() => router.replace('/login')}
       >
         <Text style={[styles.skipText, { color: 'rgba(255,255,255,0.7)' }]}>SKIP</Text>
       </Pressable>

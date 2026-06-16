@@ -17,7 +17,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
-import { useAuthLogin } from '@workspace/api-client-react';
+import { useAuthLogin, useAuthGoogle } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function LoginScreen() {
   const colors = useColors();
@@ -29,7 +30,9 @@ export default function LoginScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const queryClient = useQueryClient();
   const loginMutation = useAuthLogin();
+  const googleMutation = useAuthGoogle();
 
   const handleLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -52,10 +55,55 @@ export default function LoginScreen() {
         },
       });
 
+      console.log('[Login] Got token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
       await AsyncStorage.setItem('auth_token', result.token);
+      // Verify the token was actually stored
+      const stored = await AsyncStorage.getItem('auth_token');
+      console.log('[Login] Verified stored token:', stored ? stored.substring(0, 15) + '…' : 'NULL');
+      
+      await queryClient.invalidateQueries();
       router.replace('/(tabs)');
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Invalid credentials';
+      setError(message);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+    
+    let idToken = '';
+
+    try {
+      // Try real Google Sign-In native module if installed and configured
+      try {
+        const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+        const hasPlay = await GoogleSignin.hasPlayServices();
+        if (hasPlay) {
+          const userInfo = await GoogleSignin.signIn();
+          idToken = userInfo.idToken;
+        }
+      } catch (err) {
+        console.log('Google Sign-In native module not available or not configured:', err);
+      }
+
+      // Fallback to mock dev token for simulator / Expo Go local testing
+      if (!idToken) {
+        idToken = 'mock_dev_google_id_token';
+      }
+
+      const result = await googleMutation.mutateAsync({
+        data: {
+          idToken,
+        },
+      });
+      console.log('[GoogleLogin] Got token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
+      await AsyncStorage.setItem('auth_token', result.token);
+      await queryClient.invalidateQueries();
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Google authentication failed';
       setError(message);
     }
   };
@@ -153,10 +201,7 @@ export default function LoginScreen() {
         {/* Google */}
         <Pressable
           style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            router.replace('/(tabs)');
-          }}
+          onPress={handleGoogleLogin}
         >
           <Text style={styles.googleIcon}>G</Text>
           <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>

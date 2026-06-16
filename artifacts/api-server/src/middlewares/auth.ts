@@ -21,6 +21,7 @@ export async function requireAuth(
   next: NextFunction,
 ): Promise<void> {
   const header = req.headers.authorization;
+  console.log("[Auth Middleware] Authorization Header:", header);
 
   if (!header || !header.startsWith("Bearer ")) {
     res.status(401).json({ message: "Authentication required" });
