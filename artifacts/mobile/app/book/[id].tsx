@@ -29,6 +29,24 @@ import {
   useAuthMe,
 } from '@workspace/api-client-react';
 
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve(false);
+      return;
+    }
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
@@ -180,46 +198,99 @@ export default function BookScreen() {
 
     setIsBooking(true);
 
-    try {
-      const dateText = `${DATES[selectedDate].date} ${DATES[selectedDate].month}`;
-      const timeText = pandit.muhurats[selectedTime];
+    const processBackendBooking = async (paymentId?: string) => {
+      try {
+        const dateText = `${DATES[selectedDate].date} ${DATES[selectedDate].month}`;
+        const timeText = pandit.muhurats[selectedTime];
 
-      const res = await createBookingMutation.mutateAsync({
-        data: {
-          poojaId: selectedPooja.id,
-          poojaName: selectedPooja.name,
-          panditId: pandit.id.toString(),
-          panditName: pandit.name,
-          panditColor: pandit.avatarColor,
-          panditInitials: pandit.initials,
-          date: dateText,
-          time: timeText,
-          amount: selectedPooja.price,
+        const res = await createBookingMutation.mutateAsync({
+          data: {
+            poojaId: selectedPooja.id,
+            poojaName: selectedPooja.name,
+            panditId: pandit.id.toString(),
+            panditName: pandit.name,
+            panditColor: pandit.avatarColor,
+            panditInitials: pandit.initials,
+            date: dateText,
+            time: timeText,
+            amount: selectedPooja.price,
+          },
+        });
+
+        // Save to latest_booking so confirmed.tsx can read it
+        const bookingDetail = {
+          ...res,
+          poojaName: res.poojaName,
+          panditName: res.panditName,
+          date: res.date,
+          time: res.time,
+          amount: res.amount,
+          panditInitials: res.panditInitials,
+          panditColor: res.panditColor,
+          bookingId: res.bookingId,
+          status: res.status,
+          paymentId: paymentId || 'mock_payment_id',
+        };
+
+        await AsyncStorage.setItem('@sankalp:latest_booking', JSON.stringify(bookingDetail));
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.push('/confirmed' as any);
+      } catch (err: any) {
+        setError(err?.data?.message || err?.message || 'Failed to place booking');
+      } finally {
+        setIsBooking(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        setError('Failed to load payment gateway. Please check your internet connection.');
+        setIsBooking(false);
+        return;
+      }
+
+      const options = {
+        key: 'rzp_test_RrQEP8mxFd8g3W',
+        amount: selectedPooja.price * 100, // Amount in paise
+        currency: 'INR',
+        name: 'Sankalp Booking',
+        description: `Booking Acharya for ${selectedPooja.name}`,
+        image: 'https://cdn-icons-png.flaticon.com/512/2913/2913520.png',
+        handler: function (response: any) {
+          console.log('[Razorpay] Payment Success:', response);
+          processBackendBooking(response.razorpay_payment_id);
         },
-      });
-
-      // Save to latest_booking so confirmed.tsx can read it
-      const bookingDetail = {
-        ...res,
-        poojaName: res.poojaName,
-        panditName: res.panditName,
-        date: res.date,
-        time: res.time,
-        amount: res.amount,
-        panditInitials: res.panditInitials,
-        panditColor: res.panditColor,
-        bookingId: res.bookingId,
-        status: res.status,
+        modal: {
+          ondismiss: function () {
+            setIsBooking(false);
+            if (typeof window !== 'undefined') {
+              const simulate = window.confirm('Razorpay checkout closed. Would you like to simulate a successful payment to test the booking flow?');
+              if (simulate) {
+                setIsBooking(true);
+                processBackendBooking('mock_web_payment_' + Date.now());
+              }
+            }
+          }
+        },
+        prefill: {
+          name: user.name || '',
+          email: user.email || '',
+          contact: user.phone || '',
+        },
+        theme: {
+          color: colors.primary,
+        },
       };
 
-      await AsyncStorage.setItem('@sankalp:latest_booking', JSON.stringify(bookingDetail));
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push('/confirmed' as any);
-    } catch (err: any) {
-      setError(err?.data?.message || err?.message || 'Failed to place booking');
-    } finally {
-      setIsBooking(false);
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } else {
+      // Native Simulator mock checkout
+      setTimeout(() => {
+        processBackendBooking('mock_native_payment_' + Date.now());
+      }, 1500);
     }
   };
 

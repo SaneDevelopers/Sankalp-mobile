@@ -26,6 +26,24 @@ import {
   useAuthMe,
 } from '@workspace/api-client-react';
 
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve(false);
+      return;
+    }
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -83,33 +101,78 @@ export default function CartScreen() {
 
     setIsCheckingOut(true);
 
-    const addressText = `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`;
+    const processBackendOrder = async (paymentId?: string) => {
+      const addressText = `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`;
 
-    // Map cart items to OrderItem spec type
-    const orderItems = items.map(i => ({
-      name: i.name,
-      qty: i.quantity,
-      price: i.price,
-      unit: i.unit,
-    }));
+      // Map cart items to OrderItem spec type
+      const orderItems = items.map(i => ({
+        name: i.name,
+        qty: i.quantity,
+        price: i.price,
+        unit: i.unit,
+      }));
 
-    try {
-      await createOrderMutation.mutateAsync({
-        data: {
-          items: orderItems,
-          amount: grandTotal,
-          delivery,
-          addressText,
+      try {
+        await createOrderMutation.mutateAsync({
+          data: {
+            items: orderItems,
+            amount: grandTotal,
+            delivery,
+            addressText,
+          },
+        });
+
+        clearCart();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.push('/confirmed' as any);
+      } catch (err: any) {
+        setError(err?.data?.message || err?.message || 'Failed to place order');
+      } finally {
+        setIsCheckingOut(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        setError('Failed to load payment gateway. Please check your internet connection.');
+        setIsCheckingOut(false);
+        return;
+      }
+
+      const options = {
+        key: 'rzp_test_RrQEP8mxFd8g3W',
+        amount: grandTotal * 100, // Amount in paise
+        currency: 'INR',
+        name: 'Sankalp Checkout',
+        description: `Order of Pooja Samagri Items`,
+        image: 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png',
+        handler: function (response: any) {
+          console.log('[Razorpay] Payment Success:', response);
+          processBackendOrder(response.razorpay_payment_id);
         },
-      });
+        modal: {
+          ondismiss: function () {
+            setIsCheckingOut(false);
+          }
+        },
+        prefill: {
+          name: user.name || '',
+          email: user.email || '',
+          contact: user.phone || '',
+        },
+        theme: {
+          color: colors.primary,
+        },
+      };
 
-      clearCart();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push('/confirmed' as any);
-    } catch (err: any) {
-      setError(err?.data?.message || err?.message || 'Failed to place order');
-    } finally {
-      setIsCheckingOut(false);
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } else {
+      // Native Simulator mock checkout
+      setTimeout(() => {
+        processBackendOrder('mock_native_payment_' + Date.now());
+      }, 1500);
     }
   };
 
