@@ -154,6 +154,13 @@ export default function CartScreen() {
         modal: {
           ondismiss: function () {
             setIsCheckingOut(false);
+            if (typeof window !== 'undefined') {
+              const simulate = window.confirm('Razorpay checkout closed. Would you like to simulate a successful payment to test the order flow?');
+              if (simulate) {
+                setIsCheckingOut(true);
+                processBackendOrder('mock_web_payment_' + Date.now());
+              }
+            }
           }
         },
         prefill: {
