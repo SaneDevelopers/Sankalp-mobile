@@ -103,6 +103,19 @@ export default function RegisterScreen() {
       setError('Please provide email or phone number');
       return;
     }
+
+    const emailTrimmed = email.trim();
+    if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      setError('Please enter a valid email address (e.g., user@example.com)');
+      return;
+    }
+
+    const phoneTrimmed = phone.trim().replace(/[^0-9]/g, '');
+    if (phone.trim() && phoneTrimmed.length !== 10) {
+      setError('Phone number must be exactly 10 digits');
+      return;
+    }
+
     if (!city) {
       setError('Please enter a valid Uttar Pradesh pincode');
       return;
