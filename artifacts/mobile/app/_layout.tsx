@@ -47,11 +47,11 @@ const queryClient = new QueryClient({
 const getBaseUrl = () => {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      return 'http://localhost:5000';
+      return 'http://localhost:5001';
     }
     return '';
   }
-  return Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
+  return Platform.OS === 'android' ? 'http://10.0.2.2:5001' : 'http://localhost:5001';
 };
 
 setBaseUrl(getBaseUrl());

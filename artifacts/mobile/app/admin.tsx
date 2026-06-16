@@ -390,8 +390,8 @@ export default function AdminScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setResettingPasswordId(id);
     try {
-      // Mocking the backend call or pointing to api server (port 5000)
-      const res = await fetch('http://localhost:5000/api/pandits/forgot-password', {
+      // Mocking the backend call or pointing to api server (port 5001)
+      const res = await fetch('http://localhost:5001/api/pandits/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

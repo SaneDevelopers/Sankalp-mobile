@@ -19,6 +19,8 @@ export default function SplashScreen() {
   const videoRef = useRef<Video>(null);
   const { width: SW, height: SH } = useWindowDimensions();
 
+  const hasNavigated = useRef(false);
+
   const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     if (!status.isLoaded) return;
     if (status.didJustFinish) {
@@ -27,6 +29,8 @@ export default function SplashScreen() {
   }, []);
 
   const navigateAway = async () => {
+    if (hasNavigated.current) return;
+    hasNavigated.current = true;
     try {
       const onboarded = await AsyncStorage.getItem('@sankalp:onboarded');
       if (onboarded) {

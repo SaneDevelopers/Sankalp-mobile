@@ -200,11 +200,18 @@ export default function LoginScreen() {
 
         {/* Google */}
         <Pressable
-          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: googleMutation.isPending ? 0.7 : 1 }]}
           onPress={handleGoogleLogin}
+          disabled={googleMutation.isPending}
         >
-          <Text style={styles.googleIcon}>G</Text>
-          <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
+          {googleMutation.isPending ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <>
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
+            </>
+          )}
         </Pressable>
 
         {/* Create account */}
