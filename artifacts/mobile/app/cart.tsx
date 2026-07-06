@@ -15,6 +15,9 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 
 import { useCart } from '@/context/CartContext';
 import { useColors } from '@/hooks/useColors';
@@ -25,6 +28,7 @@ import {
   useCreateOrder,
   useAuthMe,
 } from '@workspace/api-client-react';
+
 
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
@@ -42,6 +46,18 @@ const loadRazorpayScript = (): Promise<boolean> => {
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
+};
+
+const getBackendUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  if (Platform.OS === 'web') {
+    return 'http://localhost:5001';
+  }
+  const debuggerHost = Constants.expoConfig?.hostUri;
+  const ip = debuggerHost ? debuggerHost.split(':')[0] : null;
+  return ip ? `http://${ip}:5001` : 'http://localhost:5001';
 };
 
 export default function CartScreen() {
@@ -176,10 +192,41 @@ export default function CartScreen() {
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } else {
-      // Native Simulator mock checkout
-      setTimeout(() => {
-        processBackendOrder('mock_native_payment_' + Date.now());
-      }, 1500);
+      // Native WebView-based Razorpay checkout
+      try {
+        const backendUrl = getBackendUrl();
+        const description = encodeURIComponent('Order of Pooja Samagri Items');
+        const name = encodeURIComponent(user.name || '');
+        const email = encodeURIComponent(user.email || '');
+        const contact = encodeURIComponent(user.phone || '');
+        const amount = grandTotal;
+
+        const redirectUrl = Linking.createURL('payment-success');
+        const checkoutUrl = `${backendUrl}/api/payment/checkout?amount=${amount}&description=${description}&name=${name}&email=${email}&contact=${contact}&redirect_url=${encodeURIComponent(redirectUrl)}`;
+        console.log('[Razorpay Native] Opening checkout URL:', checkoutUrl);
+
+        const browserResult = await WebBrowser.openAuthSessionAsync(checkoutUrl, redirectUrl);
+
+        if (browserResult.type === 'success' && browserResult.url) {
+          console.log('[Razorpay Native] Payment success callback URL:', browserResult.url);
+          const parsedUrl = Linking.parse(browserResult.url);
+          const paymentId = parsedUrl.queryParams?.payment_id;
+
+          if (paymentId) {
+            console.log('[Razorpay Native] Payment ID found:', paymentId);
+            processBackendOrder(paymentId as string);
+          } else {
+            throw new Error('Payment verification ID not found.');
+          }
+        } else {
+          console.log('[Razorpay Native] Payment closed or cancelled.');
+          setIsCheckingOut(false);
+        }
+      } catch (err: any) {
+        console.log('[Razorpay Native] Error during mobile checkout:', err);
+        setError('Payment flow failed: ' + err.message);
+        setIsCheckingOut(false);
+      }
     }
   };
 

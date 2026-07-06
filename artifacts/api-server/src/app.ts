@@ -31,4 +31,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+app.get("/payment/checkout", (req, res) => {
+  res.redirect(`/api/payment/checkout?${new URLSearchParams(req.query as any).toString()}`);
+});
+
 export default app;

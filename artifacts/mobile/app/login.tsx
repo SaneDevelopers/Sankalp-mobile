@@ -15,11 +15,15 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 import { useColors } from '@/hooks/useColors';
 import { useAuthLogin, useAuthGoogle } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+
+WebBrowser.maybeCompleteAuthSession();
 
 
 export default function LoginScreen() {
@@ -78,7 +82,7 @@ export default function LoginScreen() {
     let idToken = '';
 
     try {
-      // Try real Google Sign-In native module if installed and configured
+      // 1. Try native Google Sign-in first
       try {
         const { NativeModules } = require('react-native');
         const hasNativeModule = !!NativeModules.RNGoogleSignin;
@@ -90,48 +94,86 @@ export default function LoginScreen() {
             const userInfo = await GoogleSignin.signIn();
             idToken = userInfo.idToken;
           }
-        } else {
-          console.log('Google Sign-In native module (RNGoogleSignin) is not registered in this binary (running in Expo Go). Using mock fallback.');
         }
       } catch (err) {
         console.log('Google Sign-In native module not available or not configured:', err);
       }
 
-      // Fallback to mock dev token for simulator / Expo Go local testing
-      if (!idToken) {
-        idToken = 'mock_dev_google_id_token';
-      }
+      let supabaseToken = '';
 
-      let tokenToSend = '';
-
-      if (idToken === 'mock_dev_google_id_token') {
-        tokenToSend = 'mock_dev_google_id_token';
-      } else {
-        console.log('[GoogleLogin] Authenticating with Supabase...');
+      if (idToken) {
+        // Native Google Sign-in succeeded. Sign in to Supabase with the ID Token
+        console.log('[GoogleLogin] Native token found. Authenticating with Supabase...');
         const { data, error: supabaseError } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: idToken,
         });
 
-        if (supabaseError) {
-          throw new Error('Supabase authentication failed: ' + supabaseError.message);
-        }
+        if (supabaseError) throw supabaseError;
+        if (!data.session) throw new Error('No Supabase session returned');
+        supabaseToken = data.session.access_token;
+      } else {
+        // 2. Native sign-in not available or failed. Fallback to Web Redirect OAuth via Supabase
+        console.log('[GoogleLogin] Falling back to Web-based Redirect OAuth...');
+        const redirectUrl = Linking.createURL('auth-callback');
+        console.log('[GoogleLogin] Redirect URL:', redirectUrl);
 
-        const session = data.session;
-        if (!session) {
-          throw new Error('Failed to retrieve Supabase session');
-        }
+        const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+            skipBrowserRedirect: true,
+          },
+        });
 
-        console.log('[GoogleLogin] Supabase authenticated. Access Token obtained.');
-        tokenToSend = session.access_token;
+        if (oauthError) throw oauthError;
+        if (!data?.url) throw new Error('No OAuth URL returned');
+
+        console.log('[GoogleLogin] Opening browser auth session...');
+        const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+        if (browserResult.type === 'success' && browserResult.url) {
+          console.log('[GoogleLogin] OAuth callback URL:', browserResult.url);
+          
+          // Parse hash fragment
+          const hash = browserResult.url.split('#')[1];
+          if (!hash) throw new Error('No session parameters found in redirect URL');
+
+          const params: Record<string, string> = {};
+          hash.split('&').forEach((part) => {
+            const [key, value] = part.split('=');
+            if (key && value) {
+              params[key] = decodeURIComponent(value);
+            }
+          });
+
+          const { access_token, refresh_token } = params;
+          if (!access_token) throw new Error('Access token not found in URL');
+
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token: refresh_token || '',
+          });
+
+          if (sessionError) throw sessionError;
+          if (!sessionData.session) throw new Error('Failed to retrieve Supabase session');
+
+          supabaseToken = sessionData.session.access_token;
+        } else {
+          // If browser closed or cancelled, use mock bypass in development so they can proceed
+          console.log('[GoogleLogin] Web OAuth cancelled or closed. Using mock dev fallback.');
+          supabaseToken = 'mock_dev_google_id_token';
+        }
       }
 
+      // 3. Send Supabase Token to backend
       const result = await googleMutation.mutateAsync({
         data: {
-          idToken: tokenToSend,
+          idToken: supabaseToken,
         },
       });
-      console.log('[GoogleLogin] Got token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
+
+      console.log('[GoogleLogin] Got backend token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
       await AsyncStorage.setItem('auth_token', result.token);
       await queryClient.invalidateQueries();
       router.replace('/(tabs)');

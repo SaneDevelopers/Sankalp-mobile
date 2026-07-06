@@ -15,8 +15,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 
 import { DATES, PANDITS, STORE_ITEMS, UTENSILS } from '@/constants/data';
+
 import { PANDIT_IMAGES, STORE_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 import { useCart } from '@/context/CartContext';
@@ -26,6 +30,7 @@ import {
   getGetAddressesQueryKey,
   useGetPandits,
   useCreateBooking,
+  useCreateOrder,
   useAuthMe,
 } from '@workspace/api-client-react';
 
@@ -47,6 +52,19 @@ const loadRazorpayScript = (): Promise<boolean> => {
   });
 };
 
+const getBackendUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  if (Platform.OS === 'web') {
+    return 'http://localhost:5001';
+  }
+  const debuggerHost = Constants.expoConfig?.hostUri;
+  const ip = debuggerHost ? debuggerHost.split(':')[0] : null;
+  return ip ? `http://${ip}:5001` : 'http://localhost:5001';
+};
+
+
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
@@ -64,6 +82,7 @@ export default function BookScreen() {
   });
 
   const createBookingMutation = useCreateBooking();
+  const createOrderMutation = useCreateOrder();
 
   // Retrieve pandit details from DB list or fallback to static list
   const pandit = pandits.find(p => p.id.toString() === id) ?? PANDITS.find(p => p.id === id) ?? PANDITS[0];
@@ -95,7 +114,9 @@ export default function BookScreen() {
 
   const selectedAddress = addresses.find(a => a.id === selectedAddressId);
 
-  const { addItem, items: cartItems } = useCart();
+  const { addItem, items: cartItems, clearCart } = useCart();
+  const samagriTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = selectedPooja ? (selectedPooja.price + samagriTotal) : 0;
 
   const getRecommendedSamagri = () => {
     const poojaNameLower = (selectedPooja?.name || '').toLowerCase();
@@ -217,6 +238,30 @@ export default function BookScreen() {
           },
         });
 
+        // If there are recommended items in the cart, place a corresponding order for them
+        if (cartItems.length > 0) {
+          const orderItems = cartItems.map(item => ({
+            name: item.name,
+            qty: item.quantity,
+            price: item.price,
+            unit: item.unit || 'pcs'
+          }));
+          const delivery = 0;
+          const addressText = selectedAddress
+            ? `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`
+            : 'Ritual Address';
+
+          await createOrderMutation.mutateAsync({
+            data: {
+              items: orderItems,
+              amount: samagriTotal,
+              delivery,
+              addressText,
+            }
+          });
+          clearCart();
+        }
+
         // Save to latest_booking so confirmed.tsx can read it
         const bookingDetail = {
           ...res,
@@ -224,7 +269,7 @@ export default function BookScreen() {
           panditName: res.panditName,
           date: res.date,
           time: res.time,
-          amount: res.amount,
+          amount: totalAmount, // Show the overall total amount paid
           panditInitials: res.panditInitials,
           panditColor: res.panditColor,
           bookingId: res.bookingId,
@@ -253,7 +298,7 @@ export default function BookScreen() {
 
       const options = {
         key: 'rzp_test_RrQEP8mxFd8g3W',
-        amount: selectedPooja.price * 100, // Amount in paise
+        amount: totalAmount * 100, // Amount in paise
         currency: 'INR',
         name: 'Sankalp Booking',
         description: `Booking Acharya for ${selectedPooja.name}`,
@@ -287,10 +332,42 @@ export default function BookScreen() {
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } else {
-      // Native Simulator mock checkout
-      setTimeout(() => {
-        processBackendBooking('mock_native_payment_' + Date.now());
-      }, 1500);
+      // Native WebView-based Razorpay checkout
+      try {
+        const backendUrl = getBackendUrl();
+        const description = encodeURIComponent(`Booking Acharya for ${selectedPooja.name}`);
+        const name = encodeURIComponent(user.name || '');
+        const email = encodeURIComponent(user.email || '');
+        const contact = encodeURIComponent(user.phone || '');
+        const amount = totalAmount;
+
+        const redirectUrl = Linking.createURL('payment-success');
+        const checkoutUrl = `${backendUrl}/api/payment/checkout?amount=${amount}&description=${description}&name=${name}&email=${email}&contact=${contact}&redirect_url=${encodeURIComponent(redirectUrl)}`;
+        console.log('[Razorpay Native] Opening checkout URL:', checkoutUrl);
+
+        const browserResult = await WebBrowser.openAuthSessionAsync(checkoutUrl, redirectUrl);
+
+        if (browserResult.type === 'success' && browserResult.url) {
+          console.log('[Razorpay Native] Payment success callback URL:', browserResult.url);
+          // Parse the payment_id parameter from the redirect url
+          const parsedUrl = Linking.parse(browserResult.url);
+          const paymentId = parsedUrl.queryParams?.payment_id;
+
+          if (paymentId) {
+            console.log('[Razorpay Native] Payment ID found:', paymentId);
+            processBackendBooking(paymentId as string);
+          } else {
+            throw new Error('Payment verification ID not found.');
+          }
+        } else {
+          console.log('[Razorpay Native] Payment closed or cancelled.');
+          setIsBooking(false);
+        }
+      } catch (err: any) {
+        console.log('[Razorpay Native] Error during mobile checkout:', err);
+        setError('Payment flow failed: ' + err.message);
+        setIsBooking(false);
+      }
     }
   };
 
@@ -522,7 +599,7 @@ export default function BookScreen() {
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Text style={styles.continueBtnText}>
-                {!user ? 'Sign In to Book' : `Continue · ₹${selectedPooja.price.toLocaleString('en-IN')}`}
+                {!user ? 'Sign In to Book' : `Continue · ₹${totalAmount.toLocaleString('en-IN')}`}
               </Text>
             )}
           </Pressable>

@@ -27,6 +27,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
+import Constants from "expo-constants";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -54,6 +55,15 @@ const getBaseUrl = () => {
     }
     return '';
   }
+
+  // Auto-detect host IP from Expo debugger
+  const debuggerHost = Constants.expoConfig?.hostUri;
+  const ip = debuggerHost ? debuggerHost.split(':')[0] : null;
+  if (ip) {
+    console.log('[API Auto-Detection] Resolved host IP address:', ip);
+    return `http://${ip}:5001`;
+  }
+
   return Platform.OS === 'android' ? 'http://10.0.2.2:5001' : 'http://localhost:5001';
 };
 
