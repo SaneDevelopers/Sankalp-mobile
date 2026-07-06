@@ -62,7 +62,7 @@ export default function EditProfileScreen() {
 
     const offlineCity = validatePincodeOffline(cleanPin);
     if (!offlineCity) {
-      setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+      setError('Sankalp is currently only available in Maharashtra.');
       setCity('');
       setResolvingPin(false);
       return;
@@ -78,11 +78,11 @@ export default function EditProfileScreen() {
         if (postOffices && postOffices.length > 0) {
           const state = postOffices[0].State;
           const district = postOffices[0].District;
-          if (state === 'Uttar Pradesh') {
+          if (state === 'Maharashtra') {
             setCity(district);
             setError('');
           } else {
-            setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+            setError('Sankalp is currently only available in Maharashtra.');
             setCity('');
           }
         }
@@ -104,7 +104,7 @@ export default function EditProfileScreen() {
     }
 
     if (!city) {
-      setError('Please enter a valid Uttar Pradesh pincode');
+      setError('Please enter a valid Maharashtra pincode');
       return;
     }
 
@@ -210,7 +210,7 @@ export default function EditProfileScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (UTTAR PRADESH ONLY)</Text>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (MAHARASHTRA ONLY)</Text>
           <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="hash" size={18} color={colors.mutedForeground} />
             <TextInput

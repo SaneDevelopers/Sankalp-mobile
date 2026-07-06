@@ -53,7 +53,7 @@ export default function RegisterScreen() {
 
     const offlineCity = validatePincodeOffline(cleanPin);
     if (!offlineCity) {
-      setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+      setError('Sankalp is currently only available in Maharashtra.');
       setCity('');
       setResolvingPin(false);
       return;
@@ -69,11 +69,11 @@ export default function RegisterScreen() {
         if (postOffices && postOffices.length > 0) {
           const state = postOffices[0].State;
           const district = postOffices[0].District;
-          if (state === 'Uttar Pradesh') {
+          if (state === 'Maharashtra') {
             setCity(district);
             setError('');
           } else {
-            setError('Sankalp is currently only available in Uttar Pradesh (UP).');
+            setError('Sankalp is currently only available in Maharashtra.');
             setCity('');
           }
         }
@@ -117,7 +117,7 @@ export default function RegisterScreen() {
     }
 
     if (!city) {
-      setError('Please enter a valid Uttar Pradesh pincode');
+      setError('Please enter a valid Maharashtra pincode');
       return;
     }
     if (password.length < 8) {
@@ -203,7 +203,7 @@ export default function RegisterScreen() {
 
         {/* Pincode Input */}
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (UTTAR PRADESH ONLY)</Text>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (MAHARASHTRA ONLY)</Text>
           <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="hash" size={18} color={colors.mutedForeground} />
             <TextInput
@@ -219,7 +219,7 @@ export default function RegisterScreen() {
           </View>
           {city ? (
             <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: colors.success, marginTop: 6, marginLeft: 4 }}>
-              Location: {city}, Uttar Pradesh
+              Location: {city}, Maharashtra
             </Text>
           ) : null}
         </View>

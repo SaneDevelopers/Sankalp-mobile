@@ -322,35 +322,28 @@ export const DATES = [
 ];
 
 export const LOCAL_PINCODES: Record<string, string> = {
-  "201301": "Noida",
-  "201305": "Noida",
-  "201308": "Greater Noida",
-  "221001": "Varanasi",
-  "221002": "Varanasi",
-  "224123": "Ayodhya",
-  "281001": "Mathura",
-  "281121": "Vrindavan",
-  "211001": "Prayagraj",
-  "226001": "Lucknow",
-  "226010": "Lucknow",
-  "273001": "Gorakhpur",
-  "208001": "Kanpur",
-  "282001": "Agra"
+  "400001": "Mumbai",
+  "400601": "Thane",
+  "411001": "Pune",
+  "422001": "Nashik",
+  "431001": "Chhatrapati Sambhajinagar",
+  "440001": "Nagpur",
+  "416001": "Kolhapur",
+  "410401": "Lonavala"
 };
 
 export const validatePincodeOffline = (pin: string) => {
   if (pin.length !== 6 || !/^\d+$/.test(pin)) return null;
   const prefix = pin.substring(0, 2);
   const prefixInt = parseInt(prefix, 10);
-  if (prefixInt >= 20 && prefixInt <= 28) {
+  if (prefixInt >= 40 && prefixInt <= 44) {
     if (LOCAL_PINCODES[pin]) return LOCAL_PINCODES[pin];
-    if (prefix === '20') return 'Noida/Western UP';
-    if (prefix === '21') return 'Prayagraj/Southern UP';
-    if (prefix === '22') return 'Lucknow/Central UP';
-    if (prefix === '23') return 'Mirzapur/Varanasi region';
-    if (prefix === '24') return 'Bareilly/Northern UP';
-    if (prefix === '25') return 'Meerut/Western UP';
-    return 'Uttar Pradesh';
+    if (prefix === '40') return 'Mumbai/Thane Region';
+    if (prefix === '41') return 'Pune/Western Maharashtra';
+    if (prefix === '42') return 'Nashik/Khandesh Region';
+    if (prefix === '43') return 'Marathwada Region';
+    if (prefix === '44') return 'Vidarbha Region';
+    return 'Maharashtra';
   }
   return null;
 };

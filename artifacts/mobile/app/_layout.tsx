@@ -45,6 +45,9 @@ const queryClient = new QueryClient({
 });
 
 const getBaseUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
       return 'http://localhost:5001';

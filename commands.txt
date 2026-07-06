@@ -20,15 +20,17 @@ Open a new, separate terminal in the root folder and run the command
 matching your terminal shell:
 
 [For macOS/Linux (Bash or Zsh)]
-PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" npx pnpm@9 --filter @workspace/api-server run dev
+PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://gypelfezbulqzgsntsfa.supabase.co" SUPABASE_JWT_SECRET="your-supabase-jwt-secret-here" npx pnpm@9 --filter @workspace/api-server run dev
 
 [For PowerShell (Windows)]
-$env:PORT="5001"; $env:DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres"; $env:JWT_SECRET="sankalp-dev-secret-key-123456"; npx pnpm@9 --filter @workspace/api-server run dev
+$env:PORT="5001"; $env:DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres"; $env:JWT_SECRET="sankalp-dev-secret-key-123456"; $env:SUPABASE_URL="https://gypelfezbulqzgsntsfa.supabase.co"; $env:SUPABASE_JWT_SECRET="your-supabase-jwt-secret-here"; npx pnpm@9 --filter @workspace/api-server run dev
 
 [For Command Prompt (cmd.exe)]
 set PORT=5001
 set DATABASE_URL=postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres
 set JWT_SECRET=sankalp-dev-secret-key-123456
+set SUPABASE_URL=https://gypelfezbulqzgsntsfa.supabase.co
+set SUPABASE_JWT_SECRET=your-supabase-jwt-secret-here
 npx pnpm@9 --filter @workspace/api-server run dev
 
 ========================================================================
@@ -38,6 +40,6 @@ npx pnpm@9 --filter @workspace/api-server run dev
 ------------------------------------------------------------------------
 Runs both services concurrently using concurrently:
 
-PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" npx concurrently "npx pnpm@9 --filter @workspace/api-server run dev" "npx pnpm@9 --filter @workspace/mobile exec expo start --clear"
+PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://gypelfezbulqzgsntsfa.supabase.co" SUPABASE_JWT_SECRET="your-supabase-jwt-secret-here" npx concurrently "npx pnpm@9 --filter @workspace/api-server run dev" "npx pnpm@9 --filter @workspace/mobile exec expo start --clear"
 
 ========================================================================

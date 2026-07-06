@@ -11,6 +11,8 @@ import { OAuth2Client } from "google-auth-library";
 import crypto from "crypto";
 import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
 import { requireAuth } from "../middlewares/auth";
+import { jwtVerify, decodeJwt } from "jose";
+
 
 const googleClient = new OAuth2Client();
 
@@ -152,7 +154,7 @@ router.post("/google", async (req, res) => {
     const body = AuthGoogleBody.parse(req.body);
     const { idToken } = body;
 
-    // Verify token using google-auth-library
+    // Verify token using google-auth-library or jose (for Supabase JWTs)
     let payload;
     try {
       if (idToken === "mock_dev_google_id_token") {
@@ -163,20 +165,63 @@ router.post("/google", async (req, res) => {
           picture: "https://lh3.googleusercontent.com/a/default-user=s96-c",
         };
       } else {
-        const audience = [
-          process.env.GOOGLE_CLIENT_ID_WEB,
-          process.env.GOOGLE_CLIENT_ID_IOS,
-          process.env.GOOGLE_CLIENT_ID_ANDROID,
-        ].filter(Boolean) as string[];
+        // Safe decode to check if the issuer is Supabase
+        let decoded;
+        try {
+          decoded = decodeJwt(idToken);
+        } catch {
+          // Token isn't a JWT or is ill-formed, we let verification libraries throw
+        }
 
-        const ticket = await googleClient.verifyIdToken({
-          idToken,
-          audience: audience.length > 0 ? audience : undefined,
-        });
-        payload = ticket.getPayload();
+        const issuer = decoded?.iss;
+        const supabaseUrl = process.env.SUPABASE_URL;
+
+        if (
+          issuer &&
+          (issuer.includes("supabase.co") ||
+            (supabaseUrl && issuer.includes(supabaseUrl)))
+        ) {
+          // Verify Supabase JWT using jose and SUPABASE_JWT_SECRET
+          const supabaseSecretStr = process.env.SUPABASE_JWT_SECRET;
+          if (!supabaseSecretStr) {
+            throw new Error("SUPABASE_JWT_SECRET is not configured on the backend");
+          }
+          const supabaseSecret = new TextEncoder().encode(supabaseSecretStr);
+          const { payload: verifiedPayload } = await jwtVerify(idToken, supabaseSecret);
+
+          const meta = (verifiedPayload.user_metadata as any) || {};
+          payload = {
+            email: verifiedPayload.email as string,
+            name:
+              meta.full_name ||
+              meta.name ||
+              (verifiedPayload.email as string).split("@")[0],
+            picture: meta.avatar_url || meta.picture || null,
+          };
+        } else {
+          // Default to Google ID Token validation
+          const audience = [
+            process.env.GOOGLE_CLIENT_ID_WEB,
+            process.env.GOOGLE_CLIENT_ID_IOS,
+            process.env.GOOGLE_CLIENT_ID_ANDROID,
+          ].filter(Boolean) as string[];
+
+          const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: audience.length > 0 ? audience : undefined,
+          });
+          const googlePayload = ticket.getPayload();
+          if (googlePayload) {
+            payload = {
+              email: googlePayload.email,
+              name: googlePayload.name,
+              picture: googlePayload.picture,
+            };
+          }
+        }
       }
     } catch (err: any) {
-      res.status(401).json({ message: "Invalid Google idToken: " + err.message });
+      res.status(401).json({ message: "Token verification failed: " + err.message });
       return;
     }
 

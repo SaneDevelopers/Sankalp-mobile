@@ -28,8 +28,8 @@ if (Test-Path $envFile) {
     Write-Host "  [!!] .env file not found!" -ForegroundColor Red
 }
 
-$env:PORT = "5000"
-Write-Host "  [OK] API Server will run on port 5000" -ForegroundColor Green
+$env:PORT = "5001"
+Write-Host "  [OK] API Server will run on port 5001" -ForegroundColor Green
 Write-Host ""
 
 # Create a temp script for the API server window
@@ -48,9 +48,9 @@ Get-Content `$envFile | ForEach-Object {
         }
     }
 }
-`$env:PORT = '5000'
+`$env:PORT = '5001'
 Write-Host ''
-Write-Host '  API Server starting on port 5000...' -ForegroundColor Green
+Write-Host '  API Server starting on port 5001...' -ForegroundColor Green
 Write-Host ''
 npx pnpm@9 --filter @workspace/api-server run dev
 "@ | Set-Content $tempScript

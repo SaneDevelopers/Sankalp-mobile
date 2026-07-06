@@ -107,7 +107,7 @@ export default function AddressesScreen() {
         if (postOffices && postOffices.length > 0) {
           const state = postOffices[0].State;
           const district = postOffices[0].District;
-          if (state === 'Uttar Pradesh') {
+          if (state === 'Maharashtra') {
             setFormData(prev => ({ ...prev, city: district }));
             setError('');
           } else {
@@ -171,7 +171,7 @@ export default function AddressesScreen() {
       return;
     }
     if (!formData.city) {
-      setError('Please provide a valid Uttar Pradesh pincode');
+      setError('Please provide a valid Maharashtra pincode');
       return;
     }
 
@@ -448,7 +448,7 @@ export default function AddressesScreen() {
 
               {/* Pincode */}
               <View style={styles.fieldGroup}>
-                <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (UTTAR PRADESH ONLY)</Text>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (MAHARASHTRA ONLY)</Text>
                 <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <Feather name="hash" size={18} color={colors.mutedForeground} />
                   <TextInput
@@ -473,7 +473,7 @@ export default function AddressesScreen() {
                     style={[styles.input, { color: colors.text }]}
                     value={formData.city}
                     editable={false}
-                    placeholder="Autodetected from Uttar Pradesh pincode"
+                    placeholder="Autodetected from Maharashtra pincode"
                     placeholderTextColor={colors.mutedForeground}
                   />
                 </View>

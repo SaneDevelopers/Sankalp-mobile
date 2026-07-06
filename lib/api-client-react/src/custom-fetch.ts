@@ -10,6 +10,9 @@ export type AuthTokenGetter = () => Promise<string | null> | string | null;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
+declare const __DEV__: boolean;
+declare const process: any;
+
 const __DEV_LOG__ = typeof __DEV__ !== 'undefined' ? __DEV__ : process?.env?.NODE_ENV !== 'production';
 
 // ---------------------------------------------------------------------------

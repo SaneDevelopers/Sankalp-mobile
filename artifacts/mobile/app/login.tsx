@@ -19,6 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useAuthLogin, useAuthGoogle } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+
 
 export default function LoginScreen() {
   const colors = useColors();
@@ -78,11 +80,18 @@ export default function LoginScreen() {
     try {
       // Try real Google Sign-In native module if installed and configured
       try {
-        const { GoogleSignin } = require('@react-native-google-signin/google-signin');
-        const hasPlay = await GoogleSignin.hasPlayServices();
-        if (hasPlay) {
-          const userInfo = await GoogleSignin.signIn();
-          idToken = userInfo.idToken;
+        const { NativeModules } = require('react-native');
+        const hasNativeModule = !!NativeModules.RNGoogleSignin;
+        
+        if (hasNativeModule) {
+          const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+          const hasPlay = await GoogleSignin.hasPlayServices();
+          if (hasPlay) {
+            const userInfo = await GoogleSignin.signIn();
+            idToken = userInfo.idToken;
+          }
+        } else {
+          console.log('Google Sign-In native module (RNGoogleSignin) is not registered in this binary (running in Expo Go). Using mock fallback.');
         }
       } catch (err) {
         console.log('Google Sign-In native module not available or not configured:', err);
@@ -93,9 +102,33 @@ export default function LoginScreen() {
         idToken = 'mock_dev_google_id_token';
       }
 
+      let tokenToSend = '';
+
+      if (idToken === 'mock_dev_google_id_token') {
+        tokenToSend = 'mock_dev_google_id_token';
+      } else {
+        console.log('[GoogleLogin] Authenticating with Supabase...');
+        const { data, error: supabaseError } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: idToken,
+        });
+
+        if (supabaseError) {
+          throw new Error('Supabase authentication failed: ' + supabaseError.message);
+        }
+
+        const session = data.session;
+        if (!session) {
+          throw new Error('Failed to retrieve Supabase session');
+        }
+
+        console.log('[GoogleLogin] Supabase authenticated. Access Token obtained.');
+        tokenToSend = session.access_token;
+      }
+
       const result = await googleMutation.mutateAsync({
         data: {
-          idToken,
+          idToken: tokenToSend,
         },
       });
       console.log('[GoogleLogin] Got token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
@@ -105,6 +138,38 @@ export default function LoginScreen() {
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Google authentication failed';
       setError(message);
+    }
+  };
+
+  const [isDemoPending, setIsDemoPending] = useState(false);
+
+  const handleDemoLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+    setIsDemoPending(true);
+
+    try {
+      console.log('[DemoLogin] Attempting mock login via backend...');
+      try {
+        const result = await googleMutation.mutateAsync({
+          data: {
+            idToken: 'mock_dev_google_id_token',
+          },
+        });
+        console.log('[DemoLogin] Backend authentication successful:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
+        await AsyncStorage.setItem('auth_token', result.token);
+      } catch (backendErr) {
+        console.log('[DemoLogin] Backend/DB is offline, bypassing authentication locally:', backendErr);
+        // Fallback: save a local mock token so they can preview the UI offline
+        await AsyncStorage.setItem('auth_token', 'local_demo_token_bypass');
+      }
+
+      await queryClient.invalidateQueries();
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      setError('Demo Sign-In failed');
+    } finally {
+      setIsDemoPending(false);
     }
   };
 
@@ -200,9 +265,9 @@ export default function LoginScreen() {
 
         {/* Google */}
         <Pressable
-          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: googleMutation.isPending ? 0.7 : 1 }]}
+          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: googleMutation.isPending ? 0.7 : 1, marginBottom: 12 }]}
           onPress={handleGoogleLogin}
-          disabled={googleMutation.isPending}
+          disabled={googleMutation.isPending || isDemoPending}
         >
           {googleMutation.isPending ? (
             <ActivityIndicator color={colors.primary} />
@@ -210,6 +275,22 @@ export default function LoginScreen() {
             <>
               <Text style={styles.googleIcon}>G</Text>
               <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
+            </>
+          )}
+        </Pressable>
+
+        {/* Demo Sign-In */}
+        <Pressable
+          style={[styles.demoBtn, { backgroundColor: colors.card, borderColor: colors.gold, borderWidth: 1.5, opacity: isDemoPending ? 0.7 : 1 }]}
+          onPress={handleDemoLogin}
+          disabled={googleMutation.isPending || isDemoPending}
+        >
+          {isDemoPending ? (
+            <ActivityIndicator color={colors.gold} />
+          ) : (
+            <>
+              <Feather name="shield" size={18} color={colors.gold} />
+              <Text style={[styles.demoBtnText, { color: colors.text }]}>Demo Sign-In (Skip Setup)</Text>
             </>
           )}
         </Pressable>
@@ -267,10 +348,15 @@ const styles = StyleSheet.create({
   orText: { fontSize: 12, fontFamily: 'Inter_500Medium', letterSpacing: 1 },
   googleBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderRadius: 14, paddingVertical: 15, borderWidth: 1, gap: 10, marginBottom: 24,
+    borderRadius: 14, paddingVertical: 15, borderWidth: 1, gap: 10,
   },
   googleIcon: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#4285F4' },
   googleBtnText: { fontSize: 15, fontFamily: 'Inter_500Medium' },
+  demoBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 14, paddingVertical: 15, borderWidth: 1.5, gap: 10, marginBottom: 24,
+  },
+  demoBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
   registerRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 12 },
   registerText: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   registerLink: { fontSize: 14, fontFamily: 'Inter_700Bold' },

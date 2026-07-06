@@ -419,7 +419,7 @@ export default function AdminScreen() {
     setResolvingPin(true);
     const offlineCity = validatePincodeOffline(cleanPin);
     if (!offlineCity) {
-      setFormError('Pandit must reside in Uttar Pradesh (UP). Pincode not supported.');
+      setFormError('Pandit must reside in Maharashtra. Pincode not supported.');
       setResolvingPin(false);
       return;
     }
@@ -435,10 +435,10 @@ export default function AdminScreen() {
         if (postOffices && postOffices.length > 0) {
           const state = postOffices[0].State;
           const district = postOffices[0].District;
-          if (state === 'Uttar Pradesh') {
+          if (state === 'Maharashtra') {
             setPanditForm(prev => ({ ...prev, city: district }));
           } else {
-            setFormError('Pandit must reside in Uttar Pradesh (UP).');
+            setFormError('Pandit must reside in Maharashtra.');
           }
         }
       }
@@ -573,7 +573,7 @@ export default function AdminScreen() {
       return;
     }
     if (!panditForm.city) {
-      setFormError('A valid Uttar Pradesh city/location is required');
+      setFormError('A valid Maharashtra city/location is required');
       return;
     }
 
@@ -1400,7 +1400,7 @@ export default function AdminScreen() {
 
               {/* Pincode Resolution */}
               <View style={styles.fieldGroup}>
-                <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (UTTAR PRADESH ONLY)</Text>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>PINCODE (MAHARASHTRA ONLY)</Text>
                 <View style={styles.pinInputWrap}>
                   <TextInput
                     style={[styles.inputField, { color: colors.text, borderColor: colors.border, flex: 1 }]}

@@ -61,6 +61,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
-    "@react-native-google-signin/google-signin": "^16.1.2"
+    "@react-native-google-signin/google-signin": "^16.1.2",
+    "@supabase/supabase-js": "^2.110.0"
   }
 }
