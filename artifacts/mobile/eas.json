@@ -11,6 +11,15 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sankalp-api-dh9s.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gypelfezbulqzgsntsfa.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5cGVsZmV6YnVscXpnc250c2ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzE3NDgsImV4cCI6MjA5NzAwNzc0OH0.2VMfnYbouPYxV-K1KBWLHeIQJg9zFqDTdww_SE7wXHM",
+        "EXPO_PUBLIC_ADMIN_EMAIL": "admin@sankalp.com",
+        "EXPO_PUBLIC_ADMIN_PASSWORD": "Sankalp_2026_Admin_Secret",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dttzjuhwp",
+        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "sankalp_preset"
       }
     },
     "production": {
