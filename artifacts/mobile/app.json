@@ -21,7 +21,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/sankalp_logo.jpg",
         "backgroundColor": "#FAF3E8"
-      }
+      },
+      "package": "com.sankalp.mobile"
     },
     "web": {
       "favicon": "./assets/images/sankalp_logo.jpg"
@@ -40,6 +41,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e6625088-f23a-4fc2-b447-abc04da8eddc"
+      }
     }
   }
 }
