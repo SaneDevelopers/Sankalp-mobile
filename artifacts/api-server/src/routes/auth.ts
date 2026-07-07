@@ -183,7 +183,7 @@ router.post("/google", async (req, res) => {
         ) {
           // Verify Supabase JWT using Supabase REST API (bypasses algorithm mismatch issues like ES256)
           const supabaseUrl = process.env.SUPABASE_URL;
-          const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_JWT_SECRET; // fallback if anon key missing
+          const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_JWT_SECRET || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5cGVsZmV6YnVscXpnc250c2ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzE3NDgsImV4cCI6MjA5NzAwNzc0OH0.2VMfnYbouPYxV-K1KBWLHeIQJg9zFqDTdww_SE7wXHM"; // fallback if anon key missing
           
           if (!supabaseUrl) {
             throw new Error("SUPABASE_URL is not configured on the backend");
