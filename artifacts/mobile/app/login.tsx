@@ -115,7 +115,7 @@ export default function LoginScreen() {
       } else {
         // 2. Native sign-in not available or failed. Fallback to Web Redirect OAuth via Supabase
         console.log('[GoogleLogin] Falling back to Web-based Redirect OAuth...');
-        const redirectUrl = Linking.createURL('auth-callback');
+        const redirectUrl = Linking.createURL('login');
         console.log('[GoogleLogin] Redirect URL:', redirectUrl);
 
         const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
