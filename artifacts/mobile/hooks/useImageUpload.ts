@@ -25,6 +25,7 @@ export function useImageUpload() {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        base64: true,
       });
 
       if (pickerResult.canceled || !pickerResult.assets || pickerResult.assets.length === 0) {
@@ -37,22 +38,17 @@ export function useImageUpload() {
       // Prepare form data
       const data = new FormData();
       
-      // On web we can just pass the uri/blob. On native RN we need a file object
-      if (typeof window !== 'undefined') {
-        // Web platform
+      // On web we can just pass the uri/blob. On native RN we can pass the base64 string as a data URI to Cloudinary.
+      if (typeof window !== 'undefined' && !pickerResult.assets[0].base64) {
+        // Web platform fallback if base64 is missing
         const response = await fetch(uri);
         const blob = await response.blob();
         data.append('file', blob);
       } else {
-        // Native platform
-        const filename = uri.split('/').pop() || 'photo.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image/jpeg`;
-        data.append('file', {
-          uri,
-          name: filename,
-          type,
-        } as any);
+        // Native platform using base64 data URI
+        const base64 = pickerResult.assets[0].base64;
+        const mimeType = uri.endsWith('.png') ? 'image/png' : 'image/jpeg';
+        data.append('file', `data:${mimeType};base64,${base64}`);
       }
 
       data.append('upload_preset', UPLOAD_PRESET);

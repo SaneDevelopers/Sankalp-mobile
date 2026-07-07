@@ -14,8 +14,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image as ExpoImage } from 'expo-image';
 
 import { useColors } from '@/hooks/useColors';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { useAuthMe, useAuthUpdateProfile } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { validatePincodeOffline } from '@/constants/data';
@@ -27,12 +29,14 @@ export default function EditProfileScreen() {
 
   const { data: user } = useAuthMe();
   const updateProfileMutation = useAuthUpdateProfile();
+  const { pickAndUploadImage, uploading } = useImageUpload();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [resolvingPin, setResolvingPin] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,6 +46,7 @@ export default function EditProfileScreen() {
       setPhone(user.phone || '');
       setEmail(user.email || '');
       setCity(user.city || '');
+      setProfileImage(user.profileImage || null);
     }
   }, [user]);
 
@@ -115,6 +120,7 @@ export default function EditProfileScreen() {
           email: email.trim() || undefined,
           phone: phone.trim() || undefined,
           city: city.trim() || undefined,
+          profileImage: profileImage || undefined,
         },
       });
 
@@ -150,14 +156,35 @@ export default function EditProfileScreen() {
       >
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <View style={[styles.avatarRing, { borderColor: colors.gold }]}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.avatarText}>{name ? name[0].toUpperCase() : 'A'}</Text>
-            </View>
-            <Pressable style={[styles.cameraBtn, { backgroundColor: colors.orange }]}>
+          <Pressable 
+            style={[styles.avatarRing, { borderColor: colors.gold }]}
+            onPress={async () => {
+              const url = await pickAndUploadImage();
+              if (url) setProfileImage(url);
+            }}
+            disabled={uploading}
+          >
+            {profileImage ? (
+              <ExpoImage
+                source={{ uri: profileImage }}
+                style={{ width: 80, height: 80, borderRadius: 40 }}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Text style={styles.avatarText}>{name ? name[0].toUpperCase() : 'A'}</Text>
+              </View>
+            )}
+            {uploading && (
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 40, alignItems: 'center', justifyContent: 'center' }]}>
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              </View>
+            )}
+            <View style={[styles.cameraBtn, { backgroundColor: colors.orange }]}>
               <Feather name="camera" size={14} color="#FFFFFF" />
-            </Pressable>
-          </View>
+            </View>
+          </Pressable>
           <Text style={[styles.changePhotoText, { color: colors.accent }]}>Tap to change photo</Text>
         </View>
 
