@@ -36527,12 +36527,12 @@ var require_lib7 = __commonJS({
       const dest = new URL$1(destination).protocol;
       return orig === dest;
     };
-    function fetch(url2, opts) {
-      if (!fetch.Promise) {
+    function fetch2(url2, opts) {
+      if (!fetch2.Promise) {
         throw new Error("native promise missing, set fetch.Promise to your favorite alternative");
       }
-      Body.Promise = fetch.Promise;
-      return new fetch.Promise(function(resolve, reject) {
+      Body.Promise = fetch2.Promise;
+      return new fetch2.Promise(function(resolve, reject) {
         const request = new Request(url2, opts);
         const options = getNodeRequestOptions(request);
         const send = (options.protocol === "https:" ? https : http).request;
@@ -36603,7 +36603,7 @@ var require_lib7 = __commonJS({
         req.on("response", function(res) {
           clearTimeout(reqTimeout);
           const headers = createHeadersLenient(res.headers);
-          if (fetch.isRedirect(res.statusCode)) {
+          if (fetch2.isRedirect(res.statusCode)) {
             const location = headers.get("Location");
             let locationURL = null;
             try {
@@ -36665,7 +36665,7 @@ var require_lib7 = __commonJS({
                   requestOpts.body = void 0;
                   requestOpts.headers.delete("content-length");
                 }
-                resolve(fetch(new Request(locationURL, requestOpts)));
+                resolve(fetch2(new Request(locationURL, requestOpts)));
                 finalize();
                 return;
             }
@@ -36757,11 +36757,11 @@ var require_lib7 = __commonJS({
         stream.end();
       }
     }
-    fetch.isRedirect = function(code) {
+    fetch2.isRedirect = function(code) {
       return code === 301 || code === 302 || code === 303 || code === 307 || code === 308;
     };
-    fetch.Promise = global.Promise;
-    module.exports = exports = fetch;
+    fetch2.Promise = global.Promise;
+    module.exports = exports = fetch2;
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = exports;
     exports.Headers = Headers;
@@ -38045,7 +38045,7 @@ var require_gaxios = __commonJS({
     var stream_1 = __require("stream");
     var uuid_1 = (init_esm_node(), __toCommonJS(esm_node_exports));
     var interceptor_1 = require_interceptor();
-    var fetch = hasFetch() ? window.fetch : node_fetch_1.default;
+    var fetch2 = hasFetch() ? window.fetch : node_fetch_1.default;
     function hasWindow() {
       return typeof window !== "undefined" && !!window;
     }
@@ -38091,7 +38091,7 @@ var require_gaxios = __commonJS({
         return __classPrivateFieldGet(this, _Gaxios_instances, "m", _Gaxios_applyResponseInterceptors).call(this, this._request(opts));
       }
       async _defaultAdapter(opts) {
-        const fetchImpl = opts.fetchImplementation || fetch;
+        const fetchImpl = opts.fetchImplementation || fetch2;
         const res = await fetchImpl(opts.url, opts);
         const data = await this.getResponseData(opts, res);
         return this.translateResponse(opts, res, data);
@@ -71433,16 +71433,25 @@ router2.post("/google", async (req, res) => {
         const issuer = decoded?.iss;
         const supabaseUrl = process.env.SUPABASE_URL;
         if (issuer && (issuer.includes("supabase.co") || supabaseUrl && issuer.includes(supabaseUrl))) {
-          const supabaseSecretStr = process.env.SUPABASE_JWT_SECRET;
-          if (!supabaseSecretStr) {
-            throw new Error("SUPABASE_JWT_SECRET is not configured on the backend");
+          const supabaseUrl2 = process.env.SUPABASE_URL;
+          const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_JWT_SECRET;
+          if (!supabaseUrl2) {
+            throw new Error("SUPABASE_URL is not configured on the backend");
           }
-          const supabaseSecret = new TextEncoder().encode(supabaseSecretStr);
-          const { payload: verifiedPayload } = await jwtVerify(idToken, supabaseSecret);
-          const meta = verifiedPayload.user_metadata || {};
+          const response = await fetch(`${supabaseUrl2}/auth/v1/user`, {
+            headers: {
+              apikey: supabaseAnonKey || "",
+              Authorization: `Bearer ${idToken}`
+            }
+          });
+          if (!response.ok) {
+            throw new Error("Failed to verify Supabase token via API");
+          }
+          const { user: user2 } = await response.json();
+          const meta = user2?.user_metadata || {};
           payload = {
-            email: verifiedPayload.email,
-            name: meta.full_name || meta.name || verifiedPayload.email.split("@")[0],
+            email: user2.email,
+            name: meta.full_name || meta.name || user2.email?.split("@")[0] || "User",
             picture: meta.avatar_url || meta.picture || null
           };
         } else {
