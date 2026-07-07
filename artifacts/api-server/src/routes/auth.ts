@@ -181,21 +181,31 @@ router.post("/google", async (req, res) => {
           (issuer.includes("supabase.co") ||
             (supabaseUrl && issuer.includes(supabaseUrl)))
         ) {
-          // Verify Supabase JWT using jose and SUPABASE_JWT_SECRET
-          const supabaseSecretStr = process.env.SUPABASE_JWT_SECRET;
-          if (!supabaseSecretStr) {
-            throw new Error("SUPABASE_JWT_SECRET is not configured on the backend");
+          // Verify Supabase JWT using Supabase REST API (bypasses algorithm mismatch issues like ES256)
+          const supabaseUrl = process.env.SUPABASE_URL;
+          const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_JWT_SECRET; // fallback if anon key missing
+          
+          if (!supabaseUrl) {
+            throw new Error("SUPABASE_URL is not configured on the backend");
           }
-          const supabaseSecret = new TextEncoder().encode(supabaseSecretStr);
-          const { payload: verifiedPayload } = await jwtVerify(idToken, supabaseSecret);
 
-          const meta = (verifiedPayload.user_metadata as any) || {};
+          const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+            headers: {
+              apikey: supabaseAnonKey || "",
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to verify Supabase token via API");
+          }
+
+          const { user } = await response.json();
+          const meta = user?.user_metadata || {};
+
           payload = {
-            email: verifiedPayload.email as string,
-            name:
-              meta.full_name ||
-              meta.name ||
-              (verifiedPayload.email as string).split("@")[0],
+            email: user.email,
+            name: meta.full_name || meta.name || user.email?.split("@")[0] || "User",
             picture: meta.avatar_url || meta.picture || null,
           };
         } else {

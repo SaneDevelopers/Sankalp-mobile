@@ -15,7 +15,7 @@ export const TRANSLATIONS = {
     morning: 'Morning',
     afternoon: 'Afternoon',
     evening: 'Evening',
-    location: 'Lucknow, Uttar Pradesh',
+    location: 'Varanasi, India',
 
     // Home sections
     sacredServices: 'Sacred Services',

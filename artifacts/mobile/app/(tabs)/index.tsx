@@ -173,7 +173,7 @@ export default function HomeScreen() {
               <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: f('semibold'), textAlign: 'right' }]}>{t('namaste')}, {displayName}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <Feather name="map-pin" size={10} color={colors.primary} />
-                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>{t('location')}</Text>
+                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>{user?.city ? `${user.city}, India` : t('location')}</Text>
               </View>
             </View>
           </View>
