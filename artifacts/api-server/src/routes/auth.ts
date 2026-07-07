@@ -200,7 +200,7 @@ router.post("/google", async (req, res) => {
             throw new Error("Failed to verify Supabase token via API");
           }
 
-          const { user } = await response.json();
+          const user = (await response.json()) as any;
           const meta = user?.user_metadata || {};
 
           payload = {
