@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { STORE_ITEMS, UTENSILS, PANDITS } from '@/constants/data';
 import { STORE_IMAGES, PANDIT_IMAGES } from '@/constants/images';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '@/lib/context/CartContext';
 import { useColors } from '@/hooks/useColors';
 import { useGetPandits } from '@workspace/api-client-react';
 
@@ -37,7 +37,7 @@ export default function ProductDetailScreen() {
 
   const getRecommendedPandits = () => {
     const itemNameLower = (item?.name || '').toLowerCase();
-    
+
     if (itemNameLower.includes('havan') || itemNameLower.includes('ghee')) {
       return panditsList.filter(p => p.category === 'havan' || p.category === 'vedic');
     }

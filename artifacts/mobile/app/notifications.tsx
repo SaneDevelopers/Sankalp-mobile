@@ -31,7 +31,7 @@ const TYPE_COLORS: Record<string, string> = {
   general: '#5C3317',
 };
 
-import { useNotifications } from '@/context/NotificationContext';
+import { useNotifications } from '@/lib/context/NotificationContext';
 
 export default function NotificationsScreen() {
   const colors = useColors();

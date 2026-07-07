@@ -21,9 +21,9 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { CartProvider } from "@/context/CartContext";
-import { NotificationProvider } from "@/context/NotificationContext";
-import { LanguageProvider } from "@/context/LanguageContext";
+import { CartProvider } from "@/lib/context/CartContext";
+import { NotificationProvider } from "@/lib/context/NotificationContext";
+import { LanguageProvider } from "@/lib/context/LanguageContext";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";

@@ -30,7 +30,7 @@ import { useNavigation } from 'expo-router';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
 
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/lib/context/LanguageContext';
 
 const MENU_ITEMS = [
   { id: 'm1', labelKey: 'editProfile', icon: 'user', route: '/edit-profile' },
@@ -139,15 +139,15 @@ export default function ProfileScreen() {
         <View style={styles.omContainer}>
           <Text style={styles.omSymbol}>ॐ</Text>
         </View>
-        <Pressable 
+        <Pressable
           style={[styles.avatarRing, { borderColor: colors.gold }]}
           onPress={handleUploadProfileImage}
           disabled={uploading}
         >
           {user?.profileImage ? (
-            <Image 
-              source={{ uri: user.profileImage }} 
-              style={styles.avatarImage} 
+            <Image
+              source={{ uri: user.profileImage }}
+              style={styles.avatarImage}
               contentFit="cover"
               transition={200}
             />

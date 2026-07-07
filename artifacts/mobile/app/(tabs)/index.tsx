@@ -24,7 +24,7 @@ import {
   useAuthUpdateProfile,
   getAuthMeQueryKey,
 } from '@workspace/api-client-react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/lib/context/LanguageContext';
 import { Image as ExpoImage } from 'expo-image';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { useQueryClient } from '@tanstack/react-query';

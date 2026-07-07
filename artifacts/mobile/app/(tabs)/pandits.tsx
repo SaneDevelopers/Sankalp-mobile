@@ -18,7 +18,7 @@ import { PANDIT_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 import { useGetPandits } from '@workspace/api-client-react';
 
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/lib/context/LanguageContext';
 
 const FILTERS = [
   { key: 'ALL', translationKey: 'filterAll' },

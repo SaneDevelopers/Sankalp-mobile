@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PANDITS, POOJA_TYPES, STORE_ITEMS, UTENSILS } from '@/constants/data';
 import { PANDIT_IMAGES, STORE_IMAGES } from '@/constants/images';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '@/lib/context/CartContext';
 import { useColors } from '@/hooks/useColors';
 
 type Tab = 'pandit' | 'samagri';

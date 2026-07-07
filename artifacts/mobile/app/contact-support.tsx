@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/hooks/useColors';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/lib/context/LanguageContext';
 import {
   useAuthMe,
   useGetBookings,
@@ -80,7 +80,7 @@ export default function ContactSupportScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setChatLanguage(lang);
 
-    const greetingText = lang === 'en' 
+    const greetingText = lang === 'en'
       ? 'Namaste! Welcome to Sankalp support. How can we assist you with your rituals, orders, or bookings today? 🌸'
       : 'नमस्ते! संकल्प सहायता में आपका स्वागत है। आज हम आपके अनुष्ठान, ऑर्डर या बुकिंग में आपकी क्या सहायता कर सकते हैं? 🌸';
 
@@ -191,7 +191,7 @@ export default function ContactSupportScreen() {
           : "आपके खाते में कोई सामग्री ऑर्डर नहीं मिला। आप सामग्री स्टोर टैब से सम्पूर्ण पूजा सामग्री किट और तांबे-पीतल के बर्तन खरीद सकते हैं! 📦";
       }
     }
-    
+
     return isEn
       ? "Thank you for reaching out. We have logged your query. Our support coordinator will connect with you shortly on your registered contact number. Have a blessed day! 🙏"
       : "हमसे संपर्क करने के लिए धन्यवाद। आपका प्रश्न दर्ज कर लिया गया है। हमारे प्रतिनिधि जल्द ही आपके पंजीकृत नंबर पर आपसे संपर्क करेंगे। आपका दिन शुभ हो! 🙏";
@@ -252,12 +252,12 @@ export default function ContactSupportScreen() {
           )}
         </View>
         {chatLanguage ? (
-          <Pressable 
+          <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setChatLanguage(null);
               setMessages([]);
-            }} 
+            }}
             style={styles.langSwitchBtn}
           >
             <Feather name="globe" size={16} color={colors.primary} />
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   langSwitchText: { fontSize: 12 },
-  
+
   // Lang Selection CSS
   langOverlay: {
     flex: 1,
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 14, lineHeight: 20 },
   timeText: { fontSize: 10, alignSelf: 'flex-end', marginTop: 4 },
   typingText: { fontSize: 13 },
-  
+
   // Suggestions CSS
   suggestionsContainer: {
     paddingVertical: 10,

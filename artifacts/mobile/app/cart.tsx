@@ -19,7 +19,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';
 
-import { useCart } from '@/context/CartContext';
+import { useCart } from '@/lib/context/CartContext';
 import { useColors } from '@/hooks/useColors';
 import { STORE_IMAGES } from '@/constants/images';
 import {

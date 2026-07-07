@@ -23,8 +23,8 @@ import { DATES, PANDITS, STORE_ITEMS, UTENSILS } from '@/constants/data';
 
 import { PANDIT_IMAGES, STORE_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
-import { useCart } from '@/context/CartContext';
-import { useNotifications } from '@/context/NotificationContext';
+import { useCart } from '@/lib/context/CartContext';
+import { useNotifications } from '@/lib/context/NotificationContext';
 import {
   useGetAddresses,
   getGetAddressesQueryKey,

@@ -18,7 +18,7 @@ import { useColors } from '@/hooks/useColors';
 import { useAuthMe, useGetBookings, getGetBookingsQueryKey } from '@workspace/api-client-react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/lib/context/LanguageContext';
 
 const FILTERS = [
   { key: 'ALL', translationKey: 'filterAll' },
@@ -118,12 +118,12 @@ export default function BookingsScreen() {
           const displayStatus = item.status === 'upcoming' ? t('filterUpcoming') : t('filterCompleted');
           return (
             <Pressable
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              router.push(`/booking-detail/${item.id}` as any);
-            }}
-          >
+              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push(`/booking-detail/${item.id}` as any);
+              }}
+            >
               <View style={styles.cardRow}>
                 <View style={[styles.avatar, { backgroundColor: item.panditColor }]}>
                   <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{item.panditInitials}</Text>

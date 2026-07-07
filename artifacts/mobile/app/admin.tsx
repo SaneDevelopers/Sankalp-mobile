@@ -20,8 +20,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColors } from '@/hooks/useColors';
-import { useNotifications } from '@/context/NotificationContext';
-import { useLanguage } from '@/context/LanguageContext';
+import { useNotifications } from '@/lib/context/NotificationContext';
+import { useLanguage } from '@/lib/context/LanguageContext';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import {
   useGetBookings,
@@ -915,7 +915,7 @@ export default function AdminScreen() {
         {activeTab === 'dashboard' && (
           <View style={styles.tabContent}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Business Dashboard & Metrics</Text>
-            
+
             {/* Extended Analytics Cards */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
               <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
@@ -991,7 +991,7 @@ export default function AdminScreen() {
                       <Text style={{ color: b.status === 'completed' ? colors.success : b.status === 'cancelled' ? colors.destructive : colors.primary, fontSize: 10, fontFamily: 'Inter_700Bold' }}>{b.status.toUpperCase()}</Text>
                     </View>
                   </View>
-                  
+
                   <View style={{ marginTop: 8 }}>
                     <Text style={{ color: colors.text, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>{b.poojaName}</Text>
                     <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>Pandit: {b.panditName}</Text>
