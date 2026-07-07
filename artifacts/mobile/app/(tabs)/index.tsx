@@ -23,6 +23,7 @@ import {
   useAuthMe,
   useAuthUpdateProfile,
   getAuthMeQueryKey,
+  useGetAddresses,
 } from '@workspace/api-client-react';
 import { useLanguage } from '@/lib/context/LanguageContext';
 import { Image as ExpoImage } from 'expo-image';
@@ -46,6 +47,18 @@ export default function HomeScreen() {
   };
 
   const { data: user } = useAuthMe();
+  const { data: addresses = [] } = useGetAddresses({
+    query: {
+      enabled: !!user,
+    }
+  });
+  
+  const defaultAddress = addresses.find(a => a.isDefault) || addresses[0];
+  const displayLocation = defaultAddress 
+    ? `${defaultAddress.city}, ${defaultAddress.pincode}`
+    : user?.city 
+      ? `${user.city}, India` 
+      : t('location');
   const queryClient = useQueryClient();
   const { pickAndUploadImage, uploading } = useImageUpload();
   const { mutateAsync: updateProfile } = useAuthUpdateProfile();
@@ -173,7 +186,7 @@ export default function HomeScreen() {
               <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: f('semibold'), textAlign: 'right' }]}>{t('namaste')}, {displayName}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <Feather name="map-pin" size={10} color={colors.primary} />
-                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>{user?.city ? `${user.city}, India` : t('location')}</Text>
+                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>{displayLocation}</Text>
               </View>
             </View>
           </View>
