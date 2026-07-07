@@ -5,7 +5,7 @@ services:
     region: singapore
     plan: free
     buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build
-    startCommand: node artifacts/api-server/dist/index.mjs
+    startCommand: NODE_ENV=production node artifacts/api-server/dist/index.mjs
     envVars:
       - key: NODE_VERSION
         value: "20.18.0"
@@ -19,6 +19,5 @@ services:
         sync: false
       - key: SUPABASE_JWT_SECRET
         sync: false
-      - key: NODE_ENV
-        value: production
+
 
