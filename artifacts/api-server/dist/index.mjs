@@ -71445,7 +71445,12 @@ router2.post("/google", async (req, res) => {
             }
           });
           if (!response.ok) {
-            throw new Error("Failed to verify Supabase token via API");
+            let errText = "Unknown error";
+            try {
+              errText = await response.text();
+            } catch (e) {
+            }
+            throw new Error(`Supabase API returned ${response.status}: ${errText}`);
           }
           const user2 = await response.json();
           const meta = user2?.user_metadata || {};
