@@ -60,7 +60,6 @@ const getBaseUrl = () => {
   const debuggerHost = Constants.expoConfig?.hostUri;
   const ip = debuggerHost ? debuggerHost.split(':')[0] : null;
   if (ip) {
-    console.log('[API Auto-Detection] Resolved host IP address:', ip);
     return `http://${ip}:5001`;
   }
 
@@ -70,7 +69,6 @@ const getBaseUrl = () => {
 setBaseUrl(getBaseUrl());
 setAuthTokenGetter(async () => {
   const token = await AsyncStorage.getItem('auth_token');
-  console.log('[AuthTokenGetter] token from storage:', token ? token.substring(0, 15) + '…' : 'NULL');
   return token;
 });
 
@@ -102,6 +100,7 @@ function RootLayoutNav() {
       <Stack.Screen name="addresses" />
       <Stack.Screen name="order-history" />
       <Stack.Screen name="admin" />
+      <Stack.Screen name="panchang" />
     </Stack>
   );
 }

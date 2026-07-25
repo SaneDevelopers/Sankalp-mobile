@@ -13,7 +13,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 declare const __DEV__: boolean;
 declare const process: any;
 
-const __DEV_LOG__ = typeof __DEV__ !== 'undefined' ? __DEV__ : process?.env?.NODE_ENV !== 'production';
+const __DEV_LOG__ = false; // set to true temporarily to debug API calls
 
 // ---------------------------------------------------------------------------
 // Module-level configuration

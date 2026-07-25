@@ -39,13 +39,14 @@ import {
   useDeleteStoreItem,
 } from '@workspace/api-client-react';
 import { validatePincodeOffline } from '@/constants/data';
+import { getHomeBanners, saveHomeBanners, BannerSlide, DEFAULT_BANNERS } from '@/lib/banners';
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const BAR_DATA = [65, 40, 80, 55, 90, 70, 45];
 
 const CATEGORIES = ['vedic', 'astrology', 'havan', 'griha'];
 
-const ADMIN_TABS = ['dashboard', 'orders', 'bookings', 'pandits', 'store'] as const;
+const ADMIN_TABS = ['dashboard', 'orders', 'bookings', 'pandits', 'store', 'banners'] as const;
 
 interface PanditFormData {
   id?: number;
@@ -121,8 +122,118 @@ export default function AdminScreen() {
   const topPadding = isDesktopWeb ? 67 : insets.top;
   const bottomPadding = isDesktopWeb ? 34 : insets.bottom;
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'bookings' | 'pandits' | 'store'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'bookings' | 'pandits' | 'store' | 'banners'>('dashboard');
   const [bookingSearch, setBookingSearch] = useState('');
+
+  // Banners manager state
+  const [adminBanners, setAdminBanners] = useState<BannerSlide[]>(DEFAULT_BANNERS);
+  const [bannerModalVisible, setBannerModalVisible] = useState(false);
+  const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
+  const [bannerForm, setBannerForm] = useState<{
+    titleEn: string;
+    titleHi: string;
+    subtitleEn: string;
+    subtitleHi: string;
+    badgeEn: string;
+    badgeHi: string;
+    buttonTextEn: string;
+    buttonTextHi: string;
+    route: string;
+    imageUrl: string;
+    type: 'offer' | 'festival' | 'panchang' | 'custom';
+  }>({
+    titleEn: '',
+    titleHi: '',
+    subtitleEn: '',
+    subtitleHi: '',
+    badgeEn: 'SPECIAL OFFER',
+    badgeHi: 'विशेष ऑफर',
+    buttonTextEn: 'BOOK NOW',
+    buttonTextHi: 'अभी बुक करें',
+    route: '/poojas',
+    imageUrl: '',
+    type: 'offer',
+  });
+
+  React.useEffect(() => {
+    getHomeBanners().then(setAdminBanners);
+  }, []);
+
+  const handleOpenBannerModal = (slide?: BannerSlide) => {
+    if (slide) {
+      setEditingBannerId(slide.id);
+      setBannerForm({
+        titleEn: slide.titleEn,
+        titleHi: slide.titleHi,
+        subtitleEn: slide.subtitleEn,
+        subtitleHi: slide.subtitleHi,
+        badgeEn: slide.badgeEn,
+        badgeHi: slide.badgeHi,
+        buttonTextEn: slide.buttonTextEn,
+        buttonTextHi: slide.buttonTextHi,
+        route: slide.route,
+        imageUrl: slide.imageUrl || '',
+        type: slide.type,
+      });
+    } else {
+      setEditingBannerId(null);
+      setBannerForm({
+        titleEn: '',
+        titleHi: '',
+        subtitleEn: '',
+        subtitleHi: '',
+        badgeEn: 'SPECIAL OFFER',
+        badgeHi: 'विशेष ऑफर',
+        buttonTextEn: 'EXPLORE',
+        buttonTextHi: 'देखें',
+        route: '/poojas',
+        imageUrl: '',
+        type: 'offer',
+      });
+    }
+    setBannerModalVisible(true);
+  };
+
+  const handleSaveBanner = async () => {
+    if (!bannerForm.titleEn || !bannerForm.titleHi) return;
+    let updated: BannerSlide[];
+    if (editingBannerId) {
+      updated = adminBanners.map(b =>
+        b.id === editingBannerId
+          ? {
+              ...b,
+              ...bannerForm,
+            }
+          : b
+      );
+    } else {
+      const newSlide: BannerSlide = {
+        id: 'b_' + Date.now(),
+        ...bannerForm,
+        bgGradient: ['#E65100', '#BF360C'],
+        active: true,
+      };
+      updated = [newSlide, ...adminBanners];
+    }
+    setAdminBanners(updated);
+    await saveHomeBanners(updated);
+    setBannerModalVisible(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleDeleteBanner = async (id: string) => {
+    const updated = adminBanners.filter(b => b.id !== id);
+    setAdminBanners(updated);
+    await saveHomeBanners(updated);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleToggleBannerActive = async (id: string) => {
+    const updated = adminBanners.map(b => (b.id === id ? { ...b, active: !b.active } : b));
+    setAdminBanners(updated);
+    await saveHomeBanners(updated);
+    Haptics.selectionAsync();
+  };
 
   const handleLanguageChange = (newLang: 'en' | 'hi') => {
     if (newLang === lang) return;
@@ -1204,6 +1315,55 @@ export default function AdminScreen() {
           </View>
         )}
 
+        {activeTab === 'banners' && (
+          <View style={styles.tabContent}>
+            <View style={styles.panditCrudHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('bannerManager')} ({adminBanners.length})</Text>
+              <Pressable style={[styles.addPanditBtn, { backgroundColor: colors.primary }]} onPress={() => handleOpenBannerModal()}>
+                <Feather name="plus" size={14} color="#FFFFFF" />
+                <Text style={styles.addPanditText}>{t('addNewSlide')}</Text>
+              </Pressable>
+            </View>
+
+            {adminBanners.map(slide => (
+              <View key={slide.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.cardHeader}>
+                  <Text style={[styles.orderId, { color: colors.text }]}>{slide.titleEn.replace('\n', ' ')}</Text>
+                  <Text style={[styles.statusText, { color: slide.active ? colors.primary : colors.mutedForeground }]}>
+                    {slide.active ? 'ACTIVE' : 'INACTIVE'}
+                  </Text>
+                </View>
+                <Text style={[styles.poojaNameText, { color: colors.text, marginTop: 4 }]}>
+                  Title (HI): {slide.titleHi.replace('\n', ' ')}
+                </Text>
+                <Text style={[styles.addressText, { color: colors.mutedForeground, marginVertical: 4 }]}>
+                  Badge: {slide.badgeEn} · Route: {slide.route}
+                </Text>
+                <View style={styles.statusButtonsRow}>
+                  <Pressable
+                    style={[styles.actionBtn, { backgroundColor: colors.gold }]}
+                    onPress={() => handleOpenBannerModal(slide)}
+                  >
+                    <Text style={styles.actionBtnText}>{t('editSlide')}</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.actionBtn, { backgroundColor: slide.active ? colors.mutedForeground : colors.primary }]}
+                    onPress={() => handleToggleBannerActive(slide.id)}
+                  >
+                    <Text style={styles.actionBtnText}>{slide.active ? 'Disable' : 'Enable'}</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
+                    onPress={() => handleDeleteBanner(slide.id)}
+                  >
+                    <Text style={styles.actionBtnText}>{t('delete')}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
 
         <Pressable
           style={[styles.backBtn, { borderColor: colors.border }]}
@@ -1660,6 +1820,147 @@ export default function AdminScreen() {
                 ) : (
                   <Text style={styles.saveBtnText}>Save Store Item</Text>
                 )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Banner Slide Modal */}
+      <Modal visible={bannerModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>
+                {editingBannerId ? t('editSlide') : t('addNewSlide')}
+              </Text>
+              <Pressable onPress={() => setBannerModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.formScroll}>
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideTitle')} (ENG)</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. Special Offer\nSave 20%"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bannerForm.titleEn}
+                  onChangeText={val => setBannerForm(prev => ({ ...prev, titleEn: val }))}
+                  multiline
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideTitle')} (HINDI)</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. विशेष ऑफर\n20% बचाएं"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bannerForm.titleHi}
+                  onChangeText={val => setBannerForm(prev => ({ ...prev, titleHi: val }))}
+                  multiline
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideSubtitle')} (ENG)</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. Book experienced pandits"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bannerForm.subtitleEn}
+                  onChangeText={val => setBannerForm(prev => ({ ...prev, subtitleEn: val }))}
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideSubtitle')} (HINDI)</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. अनुभवी पंडितों से पूजन कराएं"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bannerForm.subtitleHi}
+                  onChangeText={val => setBannerForm(prev => ({ ...prev, subtitleHi: val }))}
+                />
+              </View>
+
+              <View style={styles.doubleFieldRow}>
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideBadge')} (ENG)</Text>
+                  <TextInput
+                    style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                    placeholder="OFFER"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={bannerForm.badgeEn}
+                    onChangeText={val => setBannerForm(prev => ({ ...prev, badgeEn: val }))}
+                  />
+                </View>
+
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideBadge')} (HI)</Text>
+                  <TextInput
+                    style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                    placeholder="ऑफर"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={bannerForm.badgeHi}
+                    onChangeText={val => setBannerForm(prev => ({ ...prev, badgeHi: val }))}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.doubleFieldRow}>
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideButton')} (ENG)</Text>
+                  <TextInput
+                    style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                    placeholder="BOOK NOW"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={bannerForm.buttonTextEn}
+                    onChangeText={val => setBannerForm(prev => ({ ...prev, buttonTextEn: val }))}
+                  />
+                </View>
+
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideButton')} (HI)</Text>
+                  <TextInput
+                    style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                    placeholder="अभी बुक करें"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={bannerForm.buttonTextHi}
+                    onChangeText={val => setBannerForm(prev => ({ ...prev, buttonTextHi: val }))}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideRoute')}</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="e.g. /poojas or /panchang"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bannerForm.route}
+                  onChangeText={val => setBannerForm(prev => ({ ...prev, route: val }))}
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('slideImage')}</Text>
+                <TextInput
+                  style={[styles.inputField, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="https://..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bannerForm.imageUrl}
+                  onChangeText={val => setBannerForm(prev => ({ ...prev, imageUrl: val }))}
+                />
+              </View>
+
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: colors.primary, marginTop: 20 }]}
+                onPress={handleSaveBanner}
+              >
+                <Text style={styles.saveBtnText}>{t('save')}</Text>
               </Pressable>
             </ScrollView>
           </View>

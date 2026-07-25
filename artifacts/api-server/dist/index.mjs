@@ -72508,6 +72508,22 @@ app.use(
 app.use((0, import_cors.default)());
 app.use(import_express9.default.json());
 app.use(import_express9.default.urlencoded({ extended: true }));
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "Sankalp API Server",
+    message: "Sankalp API Server is live and healthy \u{1F680}",
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    endpoints: {
+      health: "/api/health",
+      auth: "/api/auth",
+      pandits: "/api/pandits",
+      storeItems: "/api/store-items",
+      bookings: "/api/bookings",
+      orders: "/api/orders"
+    }
+  });
+});
 app.use("/api", routes_default);
 app.get("/payment/checkout", (req, res) => {
   res.redirect(`/api/payment/checkout?${new URLSearchParams(req.query).toString()}`);

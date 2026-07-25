@@ -29,6 +29,11 @@ import { useLanguage } from '@/lib/context/LanguageContext';
 import { Image as ExpoImage } from 'expo-image';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { useQueryClient } from '@tanstack/react-query';
+import { BannerSlider } from '@/components/BannerSlider';
+import { PanchangCard } from '@/components/PanchangCard';
+import { getHomeBanners, BannerSlide, DEFAULT_BANNERS } from '@/lib/banners';
+import { getPanchangForDate } from '@/constants/panchang';
+import { requestNotificationPermission } from '@/lib/notifications';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 70 : 52;
 
@@ -37,8 +42,15 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
+  const [banners, setBanners] = useState<BannerSlide[]>(DEFAULT_BANNERS);
   const { lang, setLang, t, f } = useLanguage();
   const topPadding = Platform.OS === 'web' ? 12 : insets.top;
+
+  const todayPanchang = getPanchangForDate(new Date());
+
+  React.useEffect(() => {
+    getHomeBanners().then(setBanners);
+  }, []);
 
   const handleLanguageChange = (newLang: 'en' | 'hi') => {
     if (newLang === lang) return;
@@ -50,6 +62,7 @@ export default function HomeScreen() {
   const { data: addresses = [] } = useGetAddresses({
     query: {
       enabled: !!user,
+      queryKey: ['/api/addresses', user?.id],
     }
   });
   
@@ -148,7 +161,13 @@ export default function HomeScreen() {
                   </Text>
                 </Pressable>
               </View>
-              <Pressable style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Pressable
+                style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  await requestNotificationPermission();
+                }}
+              >
                 <Feather name="bell" size={20} color={colors.primary} />
               </Pressable>
               <Pressable
@@ -204,35 +223,40 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Festival Banner */}
+        {/* Tithi Strip — Panchang shortcut */}
         <Pressable
-          style={[styles.festivalBanner, { backgroundColor: colors.primary }]}
-          onPress={() => router.push('/poojas' as any)}
+          style={[styles.tithiStrip, { backgroundColor: colors.primary }]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/panchang' as any);
+          }}
         >
-          <Image source={FESTIVAL_BANNER} style={styles.festivalBg} resizeMode="cover" />
-          <View style={styles.festivalOverlay}>
-            <View style={styles.festivalBadge}>
-              <Feather name="star" size={10} color={colors.gold} />
-              <Text style={[styles.festivalBadgeText, { color: colors.gold, fontFamily: f('semibold') }]}>{t("festivalSpecial")}</Text>
-            </View>
-            <Text style={[styles.festivalTitle, { fontFamily: f('bold') }]}>
-              {t("festivalTitleLine1")}{'\n'}{t("festivalTitleLine2")}
+          <Text style={[styles.tithiStripOm, { fontFamily: f('bold') }]}>ॐ</Text>
+          <View style={styles.tithiStripCenter}>
+            <Text style={[styles.tithiStripLabel, { fontFamily: f('medium') }]}>
+              {lang === 'hi' ? 'आज की तिथि' : "Today's Tithi"}
             </Text>
-            <Text style={[styles.festivalSub, { fontFamily: f('regular') }]}>{t("festivalSub")}</Text>
-            <Pressable
-              style={[styles.festivalBtn, { backgroundColor: colors.orange }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/poojas' as any);
-              }}
-            >
-              <Text style={[styles.festivalBtnText, { fontFamily: f('bold') }]}>{t("bookNow")}</Text>
-            </Pressable>
+            <Text style={[styles.tithiStripValue, { fontFamily: f('bold') }]}>
+              {lang === 'hi'
+                ? `${todayPanchang.tithi.pakshaHi} ${todayPanchang.tithi.hi} · ${todayPanchang.nakshatra.hi}`
+                : `${todayPanchang.tithi.pakshaEn} ${todayPanchang.tithi.en} · ${todayPanchang.nakshatra.en}`}
+            </Text>
           </View>
-          <View style={styles.omOverlay}>
-            <Text style={styles.omText}>ॐ</Text>
+          <View style={styles.tithiStripRight}>
+            <Text style={[styles.tithiStripStatusDot,
+              { color: todayPanchang.auspiciousStatus.isHighlyAuspicious ? '#4ADE80' : '#FCD34D' }]}>●</Text>
+            <Text style={[styles.tithiStripStatus, { fontFamily: f('semibold') }]}>
+              {lang === 'hi' ? todayPanchang.auspiciousStatus.hi : todayPanchang.auspiciousStatus.en}
+            </Text>
+            <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.7)" />
           </View>
         </Pressable>
+
+        {/* Dynamic Top Hero Carousel Banner Slider */}
+        <BannerSlider banners={banners} />
+
+        {/* Panchang Card on Home */}
+        <PanchangCard panchang={todayPanchang} />
 
         {/* Sacred Services — Pooja & Havan only */}
         <View style={styles.sectionHeader}>
@@ -475,4 +499,49 @@ const styles = StyleSheet.create({
   samagriName: { fontSize: 12, fontFamily: 'Inter_600SemiBold', paddingHorizontal: 10, marginTop: 8, lineHeight: 17 },
   samagriUnit: { fontSize: 10, fontFamily: 'Inter_400Regular', paddingHorizontal: 10, marginTop: 2, marginBottom: 4 },
   samagriPrice: { fontSize: 14, fontFamily: 'Inter_700Bold', paddingHorizontal: 10 },
+
+  // Tithi Strip
+  tithiStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  tithiStripOm: {
+    fontSize: 20,
+    color: '#FFD700',
+    opacity: 0.9,
+    minWidth: 24,
+    textAlign: 'center',
+  },
+  tithiStripCenter: {
+    flex: 1,
+    gap: 2,
+  },
+  tithiStripLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 0.5,
+  },
+  tithiStripValue: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  tithiStripRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tithiStripStatusDot: {
+    fontSize: 8,
+  },
+  tithiStripStatus: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.8)',
+  },
 });

@@ -29,6 +29,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root route handler to resolve "Cannot GET /"
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "Sankalp API Server",
+    message: "Sankalp API Server is live and healthy 🚀",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: "/api/health",
+      auth: "/api/auth",
+      pandits: "/api/pandits",
+      storeItems: "/api/store-items",
+      bookings: "/api/bookings",
+      orders: "/api/orders"
+    }
+  });
+});
+
 app.use("/api", router);
 
 app.get("/payment/checkout", (req, res) => {

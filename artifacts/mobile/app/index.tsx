@@ -55,13 +55,9 @@ export default function SplashScreen() {
   let videoHeight = SH;
 
   if (screenAspectRatio < VIDEO_ASPECT_RATIO) {
-    // Screen is taller/narrower than the video (e.g. standard/tall phones)
-    // Fit to screen width
     videoWidth = SW;
     videoHeight = SW / VIDEO_ASPECT_RATIO;
   } else {
-    // Screen is wider/shorter than the video (e.g. tablets/iPads)
-    // Fit to screen height
     videoHeight = SH;
     videoWidth = SH * VIDEO_ASPECT_RATIO;
   }
@@ -79,10 +75,7 @@ export default function SplashScreen() {
       <Video
         ref={videoRef}
         source={require('../assets/splashscreen.mp4')}
-        style={{
-          width: videoWidth,
-          height: videoHeight,
-        }}
+        style={{ width: videoWidth, height: videoHeight }}
         resizeMode={ResizeMode.CONTAIN}
         shouldPlay
         isMuted
@@ -92,14 +85,12 @@ export default function SplashScreen() {
 
       {isTallScreen ? (
         <>
-          {/* Top Edge Blend (Video top edge starts at topGap) */}
           <LinearGradient
             colors={['rgba(195, 175, 139, 0)', 'rgba(195, 175, 139, 1)', 'rgba(195, 175, 139, 0)']}
             style={[styles.blendTop, { top: topGap - 20 }]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
           />
-          {/* Bottom Edge Blend (Video bottom edge ends at topGap + videoHeight) */}
           <LinearGradient
             colors={['rgba(204, 184, 155, 0)', 'rgba(204, 184, 155, 1)', 'rgba(204, 184, 155, 0)']}
             style={[styles.blendBottom, { top: topGap + videoHeight - 20 }]}
@@ -109,14 +100,12 @@ export default function SplashScreen() {
         </>
       ) : (
         <>
-          {/* Left Edge Blend */}
           <LinearGradient
             colors={['rgba(202, 184, 152, 0)', 'rgba(202, 184, 152, 1)', 'rgba(202, 184, 152, 0)']}
             style={[styles.blendLeft, { left: leftGap - 20 }]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           />
-          {/* Right Edge Blend */}
           <LinearGradient
             colors={['rgba(202, 184, 152, 0)', 'rgba(202, 184, 152, 1)', 'rgba(202, 184, 152, 0)']}
             style={[styles.blendRight, { left: leftGap + videoWidth - 20 }]}
@@ -175,4 +164,3 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 });
-
