@@ -4,13 +4,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
   FlatList,
-  Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PANDITS, POOJA_TYPES } from '@/constants/data';
@@ -96,7 +96,12 @@ export default function PanditsByPoojaScreen() {
                 router.push(`/pandit/${item.id}` as any);
               }}
             >
-              <Image source={PANDIT_IMAGES[item.id.toString()] ?? PANDIT_IMAGES['1']} style={styles.avatar} resizeMode="cover" />
+              <Image
+                source={PANDIT_IMAGES[item.id.toString()] ?? PANDIT_IMAGES['1']}
+                style={styles.avatar}
+                contentFit="cover"
+                contentPosition="top"
+              />
               <View style={styles.info}>
                 <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                 <Text style={[styles.specialty, { color: colors.mutedForeground }]}>

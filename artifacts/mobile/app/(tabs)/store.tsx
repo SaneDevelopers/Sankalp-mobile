@@ -17,11 +17,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 
 import { STORE_IMAGES } from '@/constants/images';
+import { STORE_ITEMS, UTENSILS } from '@/constants/data';
 import { useCart } from '@/lib/context/CartContext';
 import { useColors } from '@/hooks/useColors';
 import { useGetStoreItems, getGetStoreItemsQueryKey } from '@workspace/api-client-react';
 
-const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
+
 
 const UTENSIL_COLORS: Record<string, string> = {
   ut1: '#C89A3C', ut2: '#D4722A', ut3: '#C89A3C',
@@ -38,10 +39,11 @@ import { useLanguage } from '@/lib/context/LanguageContext';
 export default function StoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : (56 + Math.max(insets?.bottom ?? 0, 6));
   const { addItem, itemCount } = useCart();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'samagri' | 'utensils'>('samagri');
-  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const topPadding = Platform.OS === 'web' ? 67 : (insets?.top ?? 0);
   const { t, f } = useLanguage();
 
   const { data: dbItems = [], isLoading, refetch, isFetching } = useGetStoreItems({
@@ -50,9 +52,13 @@ export default function StoreScreen() {
     }
   });
 
-  const featured = dbItems.find(i => i.featured) || dbItems[0];
-  const samagriItems = dbItems.filter(i => i.category === 'samagri' || i.category === 'premium' ? (dbItems.find(x => x.featured)?.id !== i.id) : false);
-  const utensilsItems = dbItems.filter(i => i.category === 'utensils');
+  const itemsList = dbItems.length > 0 
+    ? dbItems 
+    : [...STORE_ITEMS, ...UTENSILS];
+
+  const featured = itemsList.find(i => i.featured) || itemsList[0];
+  const samagriItems = itemsList.filter(i => i.category === 'samagri' || i.category === 'premium' ? (itemsList.find(x => x.featured)?.id !== i.id) : false);
+  const utensilsItems = itemsList.filter(i => i.category === 'utensils');
 
   const filteredSamagri = search
     ? samagriItems.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
@@ -101,7 +107,7 @@ export default function StoreScreen() {
           </View>
 
           {/* Featured Product */}
-          {!search && (
+          {!search && featured && (
             <View style={[styles.featuredCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Image source={featured.imageUrl ? { uri: featured.imageUrl } : (STORE_IMAGES[`si${featured.id}`] || STORE_IMAGES[String(featured.id)] || STORE_IMAGES['si1'])} style={styles.featuredImage} contentFit="cover" />
               <View style={styles.featuredInfo}>

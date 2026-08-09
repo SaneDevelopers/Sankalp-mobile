@@ -25,14 +25,15 @@ const FILTERS = [
   { key: 'UPCOMING', translationKey: 'filterUpcoming' },
   { key: 'COMPLETED', translationKey: 'filterCompleted' },
 ];
-const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
+
 
 export default function BookingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : (56 + Math.max(insets?.bottom ?? 0, 6));
   const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState('ALL');
-  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const topPadding = Platform.OS === 'web' ? 67 : (insets?.top ?? 0);
   const { t, f } = useLanguage();
 
   const { data: user } = useAuthMe();

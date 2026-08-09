@@ -4,13 +4,13 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   FlatList,
-  Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PANDITS, Pandit } from '@/constants/data';
@@ -26,13 +26,14 @@ const FILTERS = [
   { key: 'ASTROLOGY', translationKey: 'filterAstrology' },
   { key: 'HAVAN', translationKey: 'filterHavan' },
 ];
-const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
+
 
 export default function PanditsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : (56 + Math.max(insets?.bottom ?? 0, 6));
   const [activeFilter, setActiveFilter] = useState('ALL');
-  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const topPadding = Platform.OS === 'web' ? 67 : (insets?.top ?? 0);
   const { t, f } = useLanguage();
 
   const { data: dbPandits = [] } = useGetPandits();
@@ -103,7 +104,8 @@ export default function PanditsScreen() {
               <Image
                 source={PANDIT_IMAGES[item.id.toString()] ?? PANDIT_IMAGES['1']}
                 style={styles.avatar}
-                resizeMode="cover"
+                contentFit="cover"
+                contentPosition="top"
               />
               <View style={styles.info}>
                 <Text style={[styles.name, { color: colors.text, fontFamily: f('bold') }]} numberOfLines={1}>{item.name}</Text>

@@ -4,13 +4,13 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   FlatList,
-  Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PANDITS, POOJA_TYPES } from '@/constants/data';
@@ -86,7 +86,12 @@ export default function FavoritesScreen() {
               style={[styles.panditCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push(`/pandit/${item.id}` as any)}
             >
-              <Image source={PANDIT_IMAGES[item.id]} style={styles.avatar} resizeMode="cover" />
+              <Image
+                source={PANDIT_IMAGES[item.id]}
+                style={styles.avatar}
+                contentFit="cover"
+                contentPosition="top"
+              />
               <View style={styles.panditInfo}>
                 <Text style={[styles.panditName, { color: colors.text }]}>{item.name}</Text>
                 <Text style={[styles.panditSpec, { color: colors.mutedForeground }]}>{item.specialty}</Text>

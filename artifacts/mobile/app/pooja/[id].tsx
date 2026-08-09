@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PANDITS, POOJA_TYPES, STORE_ITEMS, UTENSILS } from '@/constants/data';
-import { PANDIT_IMAGES, STORE_IMAGES } from '@/constants/images';
+import { PANDIT_IMAGES, STORE_IMAGES, POOJA_IMAGES } from '@/constants/images';
 import { useCart } from '@/lib/context/CartContext';
 import { useColors } from '@/hooks/useColors';
 
@@ -80,7 +80,7 @@ export default function PoojaDetailScreen() {
 
         {/* Hero */}
         <View style={[styles.hero, { backgroundColor: pooja.bgColor }]}>
-          <Image source={STORE_IMAGES['si2']} style={styles.heroBg} resizeMode="cover" />
+          <Image source={POOJA_IMAGES[pooja.id]} style={styles.heroBg} resizeMode="cover" />
           <View style={styles.heroOverlay}>
             <View style={[styles.heroTopBar, { paddingTop: topPadding + 12 }]}>
               <Pressable style={styles.backCircle} onPress={() => router.back()}>

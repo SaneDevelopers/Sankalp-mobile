@@ -17,7 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BESTSELLER_ITEMS, FEATURED_POOJAS, PANDITS } from '@/constants/data';
-import { FESTIVAL_BANNER, PANDIT_IMAGES, STORE_IMAGES } from '@/constants/images';
+import { FESTIVAL_BANNER, PANDIT_IMAGES, STORE_IMAGES, POOJA_IMAGES } from '@/constants/images';
 import { useColors } from '@/hooks/useColors';
 import {
   useAuthMe,
@@ -35,16 +35,15 @@ import { getHomeBanners, BannerSlide, DEFAULT_BANNERS } from '@/lib/banners';
 import { getPanchangForDate } from '@/constants/panchang';
 import { requestNotificationPermission } from '@/lib/notifications';
 
-const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 70 : 52;
-
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 70 : (56 + Math.max(insets?.bottom ?? 0, 6));
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
   const [banners, setBanners] = useState<BannerSlide[]>(DEFAULT_BANNERS);
   const { lang, setLang, t, f } = useLanguage();
-  const topPadding = Platform.OS === 'web' ? 12 : insets.top;
+  const topPadding = Platform.OS === 'web' ? 12 : (insets?.top ?? 0);
 
   const todayPanchang = getPanchangForDate(new Date());
 
@@ -70,7 +69,7 @@ export default function HomeScreen() {
   const displayLocation = defaultAddress 
     ? `${defaultAddress.city}, ${defaultAddress.pincode}`
     : user?.city 
-      ? `${user.city}, India` 
+      ? `${user.city}, Maharashtra` 
       : t('location');
   const queryClient = useQueryClient();
   const { pickAndUploadImage, uploading } = useImageUpload();
@@ -328,7 +327,12 @@ export default function HomeScreen() {
                 style={[styles.poojaCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push(`/pandit/${item.panditId}` as any)}
               >
-                <Image source={PANDIT_IMAGES[item.panditId]} style={styles.poojaAvatar} resizeMode="cover" />
+                <ExpoImage
+                  source={POOJA_IMAGES[item.poojaId]}
+                  style={styles.poojaAvatar}
+                  contentFit="cover"
+                  contentPosition="center"
+                />
                 <Text style={[styles.poojaName, { color: colors.text, fontFamily: f('semibold') }]} numberOfLines={2}>{t(item.name)}</Text>
                 <Text style={[styles.poojaDuration, { color: colors.mutedForeground, fontFamily: f('regular') }]}>{t(item.duration)}</Text>
                 <View style={styles.poojaFooter}>
@@ -482,7 +486,7 @@ const styles = StyleSheet.create({
   poojaCard: {
     width: 155, borderRadius: 14, padding: 12, borderWidth: 1, marginBottom: 4,
   },
-  poojaAvatar: { width: '100%', height: 90, borderRadius: 10, marginBottom: 10 },
+  poojaAvatar: { width: '100%', height: 110, borderRadius: 10, marginBottom: 10 },
   poojaName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 4, lineHeight: 18 },
   poojaDuration: { fontSize: 11, fontFamily: 'Inter_400Regular', marginBottom: 12 },
   poojaFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

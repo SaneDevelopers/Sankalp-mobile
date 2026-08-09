@@ -22,7 +22,12 @@
         "foregroundImage": "./assets/images/sankalp_logo.jpg",
         "backgroundColor": "#FAF3E8"
       },
-      "package": "com.sankalp.mobile"
+      "package": "com.sankalp.mobile",
+      "statusBar": {
+        "translucent": true,
+        "backgroundColor": "transparent",
+        "barStyle": "dark-content"
+      }
     },
     "web": {
       "favicon": "./assets/images/sankalp_logo.jpg"

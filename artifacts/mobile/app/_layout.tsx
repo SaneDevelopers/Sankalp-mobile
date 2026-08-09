@@ -15,6 +15,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -24,12 +25,18 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CartProvider } from "@/lib/context/CartContext";
 import { NotificationProvider } from "@/lib/context/NotificationContext";
 import { LanguageProvider } from "@/lib/context/LanguageContext";
-import { Platform } from "react-native";
+import { Platform, StatusBar as RNStatusBar } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import Constants from "expo-constants";
 
 SplashScreen.preventAutoHideAsync();
+
+// Ensure Android status bar is translucent so safe area insets report correctly
+if (Platform.OS === 'android') {
+  RNStatusBar.setTranslucent(true);
+  RNStatusBar.setBackgroundColor('transparent');
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,7 +83,6 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="onboarding" />
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
       <Stack.Screen name="otp" />
@@ -135,6 +141,7 @@ export default function RootLayout() {
               <CartProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   <KeyboardProvider>
+                    <StatusBar style="dark" translucent />
                     <RootLayoutNav />
                   </KeyboardProvider>
                 </GestureHandlerRootView>

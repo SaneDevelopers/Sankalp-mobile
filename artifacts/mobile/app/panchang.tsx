@@ -50,7 +50,7 @@ export default function PanchangScreen() {
 
       {/* Header */}
       <View style={[styles.header, {
-        paddingTop: topPadding + 8,
+        paddingTop: topPadding + 6,
         backgroundColor: colors.primary,
       }]}>
         <Pressable
@@ -73,7 +73,7 @@ export default function PanchangScreen() {
           </Text>
         </View>
 
-        <View style={{ width: 36 }} />
+        <View style={{ width: 34 }} />
       </View>
 
       {/* Date Selector */}
@@ -114,10 +114,10 @@ export default function PanchangScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
         {/* Panchang Detail Card */}
-        <View style={{ marginTop: 16 }}>
+        <View style={{ marginTop: 12 }}>
           <PanchangCard panchang={panchang} showFullDetails />
         </View>
 
@@ -147,45 +147,43 @@ export default function PanchangScreen() {
                 key={idx}
                 style={[styles.recCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
-                {/* Card top row */}
+                {/* Card top row — icon + text + badge */}
                 <View style={styles.recCardTop}>
                   <View style={[styles.recIconBg, { backgroundColor: colors.primary + '12' }]}>
                     <Text style={styles.recIconEmoji}>🪔</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <View style={styles.recBadgeRow}>
-                      <View style={[styles.recBadge, { backgroundColor: colors.orange + '18' }]}>
-                        <Feather name="star" size={9} color={colors.orange} />
-                        <Text style={[styles.recBadgeText, { color: colors.orange, fontFamily: f('bold') }]}>
-                          {lang === 'hi' ? 'शुभ अनुष्ठान' : 'AUSPICIOUS'}
-                        </Text>
-                      </View>
-                    </View>
                     <Text style={[styles.recName, { color: colors.text, fontFamily: f('bold') }]}>
                       {name}
+                    </Text>
+                    <Text style={[styles.recReason, { color: colors.mutedForeground, fontFamily: f('regular') }]} numberOfLines={2}>
+                      {reason}
+                    </Text>
+                  </View>
+                  <View style={[styles.recBadge, { backgroundColor: colors.orange + '18' }]}>
+                    <Feather name="star" size={7} color={colors.orange} />
+                    <Text style={[styles.recBadgeText, { color: colors.orange, fontFamily: f('bold') }]}>
+                      {lang === 'hi' ? 'शुभ' : 'SHUBH'}
                     </Text>
                   </View>
                 </View>
 
-                {/* Reason */}
-                <Text style={[styles.recReason, { color: colors.mutedForeground, fontFamily: f('regular') }]}>
-                  {reason}
-                </Text>
-
-                {/* Book CTA */}
-                <Pressable
-                  style={[styles.bookCta, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/pandit/${item.panditId}` as any);
-                  }}
-                >
-                  <Feather name="calendar" size={14} color="#FFFFFF" />
-                  <Text style={[styles.bookCtaText, { fontFamily: f('bold') }]}>
-                    {t('bookRecommendedPooja')}
-                  </Text>
-                  <Feather name="arrow-right" size={14} color="#FFFFFF" />
-                </Pressable>
+                {/* Book CTA — compact, right-aligned */}
+                <View style={styles.recCardBottom}>
+                  <Pressable
+                    style={[styles.bookCta, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/pandit/${item.panditId}` as any);
+                    }}
+                  >
+                    <Feather name="calendar" size={11} color="#FFFFFF" />
+                    <Text style={[styles.bookCtaText, { fontFamily: f('bold') }]}>
+                      {t('bookRecommendedPooja')}
+                    </Text>
+                    <Feather name="chevron-right" size={11} color="#FFFFFF" />
+                  </Pressable>
+                </View>
               </View>
             );
           })}
@@ -205,153 +203,154 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 10,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: 1,
   },
   headerOm: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#FFD700',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#FFFFFF',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   headerSub: {
-    fontSize: 11,
+    fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
   },
 
   // Date Selector
   dateSelectorWrap: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 14,
+    paddingBottom: 12,
   },
   dateSelectorPill: {
     flexDirection: 'row',
-    borderRadius: 16,
-    padding: 4,
-    gap: 4,
+    borderRadius: 14,
+    padding: 3,
+    gap: 3,
   },
   datePill: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 1,
   },
   datePillActive: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
     elevation: 2,
   },
   datePillLabel: {
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
   },
   datePillDate: {
-    fontSize: 10,
+    fontSize: 9,
     textAlign: 'center',
   },
 
   // Recommended Section
   sectionWrap: {
-    paddingHorizontal: 20,
-    marginTop: 4,
+    paddingHorizontal: 16,
+    marginTop: 2,
   },
   sectionHeader: {
     borderLeftWidth: 3,
-    paddingLeft: 12,
-    marginBottom: 14,
+    paddingLeft: 10,
+    marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
+    lineHeight: 19,
   },
   sectionSubtitle: {
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 10,
+    marginTop: 1,
   },
   recCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 16,
-    marginBottom: 12,
+    padding: 10,
+    marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
     elevation: 1,
   },
   recCardTop: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 10,
+    gap: 8,
     alignItems: 'flex-start',
   },
   recIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   recIconEmoji: {
-    fontSize: 22,
-  },
-  recBadgeRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
+    fontSize: 14,
   },
   recBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    gap: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 2,
   },
   recBadgeText: {
-    fontSize: 9,
-    letterSpacing: 0.5,
+    fontSize: 7,
+    letterSpacing: 0.3,
   },
   recName: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
   },
   recReason: {
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 14,
+    fontSize: 10,
+    lineHeight: 14,
+    marginTop: 1,
+  },
+  recCardBottom: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 6,
   },
   bookCta: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
   bookCtaText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    flex: 1,
-    textAlign: 'center',
+    fontSize: 10,
   },
 });

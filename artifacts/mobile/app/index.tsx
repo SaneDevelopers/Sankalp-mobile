@@ -32,17 +32,11 @@ export default function SplashScreen() {
     if (hasNavigated.current) return;
     hasNavigated.current = true;
     try {
-      const onboarded = await AsyncStorage.getItem('@sankalp:onboarded');
-      if (onboarded) {
-        const token = await AsyncStorage.getItem('auth_token');
-        if (token) {
-          router.replace('/(tabs)');
-        } else {
-          router.replace('/login');
-        }
+      const token = await AsyncStorage.getItem('auth_token');
+      if (token) {
+        router.replace('/(tabs)');
       } else {
-        await AsyncStorage.setItem('@sankalp:onboarded', 'true');
-        router.replace('/onboarding' as any);
+        router.replace('/login');
       }
     } catch {
       router.replace('/login');

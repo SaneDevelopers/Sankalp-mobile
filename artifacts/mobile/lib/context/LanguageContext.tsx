@@ -15,7 +15,7 @@ export const TRANSLATIONS = {
     morning: 'Morning',
     afternoon: 'Afternoon',
     evening: 'Evening',
-    location: 'Varanasi, India',
+    location: 'Pune, Maharashtra',
 
     // Home sections
     sacredServices: 'Sacred Services',
@@ -177,7 +177,7 @@ export const TRANSLATIONS = {
     morning: 'प्रभात',
     afternoon: 'दोपहर',
     evening: 'संध्या',
-    location: 'लखनऊ, उत्तर प्रदेश',
+    location: 'पुणे, महाराष्ट्र',
 
     // Home sections
     sacredServices: 'पवित्र सेवाएँ',

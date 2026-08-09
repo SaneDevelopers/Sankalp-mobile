@@ -284,10 +284,10 @@ export const BESTSELLER_ITEMS = [
 ];
 
 export const FEATURED_POOJAS = [
-  { id: 'fp1', name: 'Satyanarayan Katha', duration: '1.5 Hrs', price: 2499, panditId: '1' },
-  { id: 'fp2', name: 'Griha Pravesh', duration: '2 Hrs', price: 3499, panditId: '3' },
-  { id: 'fp3', name: 'Navagraha Shanti', duration: '1 Hr', price: 1999, panditId: '2' },
-  { id: 'fp4', name: 'Rudra Abhishek', duration: '2.5 Hrs', price: 4499, panditId: '1' },
+  { id: 'fp1', name: 'Satyanarayan Katha', duration: '1.5 Hrs', price: 2499, panditId: '1', poojaId: 'pt1' },
+  { id: 'fp2', name: 'Griha Pravesh', duration: '2 Hrs', price: 3499, panditId: '3', poojaId: 'pt2' },
+  { id: 'fp3', name: 'Navagraha Shanti', duration: '1 Hr', price: 1999, panditId: '2', poojaId: 'pt3' },
+  { id: 'fp4', name: 'Rudra Abhishek', duration: '2.5 Hrs', price: 4499, panditId: '1', poojaId: 'pt4' },
 ];
 
 export const BOOKINGS: Booking[] = [

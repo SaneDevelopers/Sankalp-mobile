@@ -28,8 +28,6 @@ import {
 } from '@workspace/api-client-react';
 import { useNavigation } from 'expo-router';
 
-const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : 60;
-
 import { useLanguage } from '@/lib/context/LanguageContext';
 
 const MENU_ITEMS = [
@@ -47,7 +45,8 @@ const MENU_ITEMS = [
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 84 : (56 + Math.max(insets?.bottom ?? 0, 6));
+  const topPadding = Platform.OS === 'web' ? 67 : (insets?.top ?? 0);
   const navigation = useNavigation();
   const { t, f } = useLanguage();
   const queryClient = useQueryClient();

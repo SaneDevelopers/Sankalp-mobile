@@ -57,16 +57,18 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
         )}
       </View>
 
-      {/* Main Grid */}
+      {/* Main Grid — Tithi & Nakshatra side by side */}
       <View style={styles.mainGrid}>
         {/* Tithi Block */}
         <View style={[styles.gridBlock, { borderRightColor: colors.border, borderRightWidth: 1 }]}>
-          <View style={[styles.iconDot, { backgroundColor: colors.primary + '18' }]}>
-            <Text style={styles.iconEmoji}>🌙</Text>
+          <View style={styles.gridBlockHeader}>
+            <View style={[styles.iconDot, { backgroundColor: colors.primary + '18' }]}>
+              <Text style={styles.iconEmoji}>🌙</Text>
+            </View>
+            <Text style={[styles.blockLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
+              {t('tithi')}
+            </Text>
           </View>
-          <Text style={[styles.blockLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
-            {t('tithi')}
-          </Text>
           <Text style={[styles.blockValue, { color: colors.text, fontFamily: f('bold') }]} numberOfLines={1}>
             {tithiText}
           </Text>
@@ -77,12 +79,14 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
 
         {/* Nakshatra Block */}
         <View style={styles.gridBlock}>
-          <View style={[styles.iconDot, { backgroundColor: colors.gold + '18' }]}>
-            <Text style={styles.iconEmoji}>⭐</Text>
+          <View style={styles.gridBlockHeader}>
+            <View style={[styles.iconDot, { backgroundColor: colors.gold + '18' }]}>
+              <Text style={styles.iconEmoji}>⭐</Text>
+            </View>
+            <Text style={[styles.blockLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
+              {t('nakshatra')}
+            </Text>
           </View>
-          <Text style={[styles.blockLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
-            {t('nakshatra')}
-          </Text>
           <Text style={[styles.blockValue, { color: colors.text, fontFamily: f('bold') }]} numberOfLines={1}>
             {nakshatraText}
           </Text>
@@ -147,7 +151,7 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
             {panchang.sunrise}
           </Text>
           <Text style={[styles.timingValueSub, { color: colors.mutedForeground, fontFamily: f('regular') }]}>
-            {lang === 'hi' ? '–' : '–'} {panchang.sunset}
+            – {panchang.sunset}
           </Text>
         </View>
       </View>
@@ -165,7 +169,7 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
                 {lang === 'hi' ? panchang.yoga.hi : panchang.yoga.en}
               </Text>
             </View>
-            <View style={[styles.vertDivider, { backgroundColor: colors.border, height: 30 }]} />
+            <View style={[styles.vertDivider, { backgroundColor: colors.border, height: 28 }]} />
             <View style={styles.yogaItem}>
               <Text style={[styles.yogaLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
                 {lang === 'hi' ? 'करण' : 'Karana'}
@@ -183,39 +187,39 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    marginHorizontal: 20,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    marginBottom: 14,
     overflow: 'hidden',
     shadowColor: '#7B1F1F',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   topStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   stripLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
   },
   stripOm: {
-    fontSize: 22,
+    fontSize: 20,
     color: '#FFD700',
     opacity: 0.9,
   },
   stripTitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   stripSub: {
     fontSize: 10,
@@ -225,49 +229,53 @@ const styles = StyleSheet.create({
   viewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
   viewBtnText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
   },
   mainGrid: {
     flexDirection: 'row',
-    paddingVertical: 14,
+    paddingVertical: 10,
   },
   gridBlock: {
     flex: 1,
-    paddingHorizontal: 16,
-    gap: 3,
+    paddingHorizontal: 14,
   },
-  iconDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  gridBlockHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
     marginBottom: 4,
   },
+  iconDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   iconEmoji: {
-    fontSize: 14,
+    fontSize: 12,
   },
   blockLabel: {
-    fontSize: 10,
+    fontSize: 9,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   blockValue: {
-    fontSize: 14,
-    marginTop: 1,
+    fontSize: 13,
+    lineHeight: 17,
   },
   blockSub: {
-    fontSize: 9.5,
+    fontSize: 9,
     marginTop: 1,
   },
   divider: {
@@ -276,35 +284,35 @@ const styles = StyleSheet.create({
   },
   timingsRow: {
     flexDirection: 'row',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 4,
   },
   timingBlock: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: 1,
   },
   timingIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
+    marginBottom: 2,
   },
   timingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
   timingLabel: {
-    fontSize: 9,
+    fontSize: 8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   timingValue: {
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 12,
   },
   timingValueSub: {
-    fontSize: 10,
+    fontSize: 9,
   },
   vertDivider: {
     width: 1,
@@ -313,21 +321,21 @@ const styles = StyleSheet.create({
   yogaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 10,
   },
   yogaItem: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: 1,
   },
   yogaLabel: {
-    fontSize: 10,
+    fontSize: 9,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   yogaValue: {
-    fontSize: 13,
+    fontSize: 12,
   },
 });
