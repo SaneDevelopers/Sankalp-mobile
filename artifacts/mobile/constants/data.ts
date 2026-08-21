@@ -56,6 +56,7 @@ export interface StoreItem {
   featured: boolean;
   description: string;
   color: string;
+  imageUrl?: string;
 }
 
 export interface Booking {
