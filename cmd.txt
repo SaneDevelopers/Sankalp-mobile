@@ -1,0 +1,30 @@
+========================================================================
+                      Mac Setup & Run Commands
+========================================================================
+
+Before starting, make sure your friend has Node.js and pnpm installed on their Mac.
+If pnpm is not installed, they can install it by running: 
+npm install -g pnpm
+
+First, open the terminal in the root folder of the project and run:
+pnpm install
+
+------------------------------------------------------------------------
+OPTION 1: RUN EVERYTHING IN A SINGLE TERMINAL (Recommended)
+------------------------------------------------------------------------
+Run this long command to start both the frontend and backend at the same time:
+
+PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://gypelfezbulqzgsntsfa.supabase.co" SUPABASE_JWT_SECRET="your-supabase-jwt-secret-here" npx concurrently "npx pnpm@9 --filter @workspace/api-server run dev" "npx pnpm@9 --filter @workspace/mobile exec expo start --clear"
+
+
+------------------------------------------------------------------------
+OPTION 2: RUN IN TWO SEPARATE TERMINALS
+------------------------------------------------------------------------
+
+Terminal 1 (Backend API Server):
+PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://gypelfezbulqzgsntsfa.supabase.co" SUPABASE_JWT_SECRET="your-supabase-jwt-secret-here" npx pnpm@9 --filter @workspace/api-server run dev
+
+Terminal 2 (Frontend Mobile/Expo):
+npx pnpm@9 --filter @workspace/mobile exec expo start --clear
+
+(Once the Expo server starts in Terminal 2, they can press 'i' to open the iOS simulator).
