@@ -24,8 +24,8 @@ const FILTERS = [
   { key: 'ALL', translationKey: 'filterAll' },
   { key: 'UPCOMING', translationKey: 'filterUpcoming' },
   { key: 'COMPLETED', translationKey: 'filterCompleted' },
+  { key: 'CANCELLED', translationKey: 'filterCancelled' },
 ];
-
 
 export default function BookingsScreen() {
   const colors = useColors();
@@ -116,7 +116,11 @@ export default function BookingsScreen() {
         )}
         renderItem={({ item }) => {
           const statusStyle = getStatusStyle(item.status as any);
-          const displayStatus = item.status === 'upcoming' ? t('filterUpcoming') : t('filterCompleted');
+          const displayStatus = item.status === 'upcoming'
+            ? t('filterUpcoming')
+            : item.status === 'completed'
+            ? t('filterCompleted')
+            : t('filterCancelled');
           return (
             <Pressable
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}

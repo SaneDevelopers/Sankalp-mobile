@@ -54,6 +54,12 @@ export const TRANSLATIONS = {
     noBookings: 'No bookings found',
     filterUpcoming: 'UPCOMING',
     filterCompleted: 'COMPLETED',
+    filterCancelled: 'CANCELLED',
+    cancelBooking: 'Cancel Booking',
+    confirmCancelTitle: 'Cancel Booking?',
+    confirmCancelMsg: 'Are you sure you want to cancel this booking? Full refund will be initiated to your original payment method.',
+    cancelling: 'Cancelling...',
+    bookingCancelledSuccess: 'Booking cancelled successfully',
 
     // Store screen
     samagriStore: 'Samagri Store',
@@ -216,6 +222,12 @@ export const TRANSLATIONS = {
     noBookings: 'कोई बुकिंग नहीं मिली',
     filterUpcoming: 'आगामी',
     filterCompleted: 'पूर्ण',
+    filterCancelled: 'रद्द की गई',
+    cancelBooking: 'बुकिंग रद्द करें',
+    confirmCancelTitle: 'क्या आप बुकिंग रद्द करना चाहते हैं?',
+    confirmCancelMsg: 'क्या आप निश्चित रूप से इस बुकिंग को रद्द करना चाहते हैं? रिफंड मूल भुगतान विधि में 3-5 दिनों में वापस आ जाएगा।',
+    cancelling: 'रद्द हो रहा है...',
+    bookingCancelledSuccess: 'बुकिंग सफलतापूर्वक रद्द कर दी गई',
 
     // Store screen
     samagriStore: 'सामग्री स्टोर',

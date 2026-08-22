@@ -71772,6 +71772,37 @@ router4.post("/", requireAuth, async (req, res) => {
     res.status(500).json({ message: err.message || "Failed to place booking" });
   }
 });
+router4.post("/:id/cancel", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ message: "Invalid ID parameter" });
+      return;
+    }
+    const [existing] = await db.select().from(bookingsTable).where(eq(bookingsTable.id, id));
+    if (!existing) {
+      res.status(404).json({ message: "Booking not found" });
+      return;
+    }
+    if (existing.userId !== userId) {
+      res.status(403).json({ message: "Not authorized to cancel this booking" });
+      return;
+    }
+    if (existing.status === "cancelled") {
+      res.status(400).json({ message: "Booking is already cancelled" });
+      return;
+    }
+    const [updated] = await db.update(bookingsTable).set({ status: "cancelled" }).where(eq(bookingsTable.id, id)).returning();
+    res.json({
+      ...updated,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Failed to cancel booking" });
+  }
+});
 router4.put("/:id/status", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
