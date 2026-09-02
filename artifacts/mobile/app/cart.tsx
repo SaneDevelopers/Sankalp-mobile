@@ -79,6 +79,8 @@ export default function CartScreen() {
 
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const [checkoutModalUrl, setCheckoutModalUrl] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [error, setError] = useState('');
 
@@ -95,6 +97,38 @@ export default function CartScreen() {
 
   const delivery = total > 999 ? 0 : 99;
   const grandTotal = total + delivery;
+
+  const processBackendOrder = async (paymentId?: string) => {
+    if (!selectedAddress) return;
+    const addressText = `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`;
+
+    // Map cart items to OrderItem spec type
+    const orderItems = items.map(i => ({
+      name: i.name,
+      qty: i.quantity,
+      price: i.price,
+      unit: i.unit,
+    }));
+
+    try {
+      await createOrderMutation.mutateAsync({
+        data: {
+          items: orderItems,
+          amount: grandTotal,
+          delivery,
+          addressText,
+        },
+      });
+
+      clearCart();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push('/confirmed' as any);
+    } catch (err: any) {
+      setError(err?.data?.message || err?.message || 'Failed to place order');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
 
   const handleCheckout = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -115,119 +149,16 @@ export default function CartScreen() {
       return;
     }
 
-    setIsCheckingOut(true);
-
-    const processBackendOrder = async (paymentId?: string) => {
-      const addressText = `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`;
-
-      // Map cart items to OrderItem spec type
-      const orderItems = items.map(i => ({
-        name: i.name,
-        qty: i.quantity,
-        price: i.price,
-        unit: i.unit,
-      }));
-
-      try {
-        await createOrderMutation.mutateAsync({
-          data: {
-            items: orderItems,
-            amount: grandTotal,
-            delivery,
-            addressText,
-          },
-        });
-
-        clearCart();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.push('/confirmed' as any);
-      } catch (err: any) {
-        setError(err?.data?.message || err?.message || 'Failed to place order');
-      } finally {
-        setIsCheckingOut(false);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      const loaded = await loadRazorpayScript();
-      if (!loaded) {
-        setError('Failed to load payment gateway. Please check your internet connection.');
-        setIsCheckingOut(false);
-        return;
-      }
-
-      const options = {
-        key: 'rzp_test_RrQEP8mxFd8g3W',
-        amount: grandTotal * 100, // Amount in paise
-        currency: 'INR',
-        name: 'Sankalp Checkout',
-        description: `Order of Pooja Samagri Items`,
-        image: 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png',
-        handler: function (response: any) {
-          console.log('[Razorpay] Payment Success:', response);
-          processBackendOrder(response.razorpay_payment_id);
-        },
-        modal: {
-          ondismiss: function () {
-            setIsCheckingOut(false);
-            if (typeof window !== 'undefined') {
-              const simulate = window.confirm('Razorpay checkout closed. Would you like to simulate a successful payment to test the order flow?');
-              if (simulate) {
-                setIsCheckingOut(true);
-                processBackendOrder('mock_web_payment_' + Date.now());
-              }
-            }
-          }
-        },
-        prefill: {
-          name: user.name || '',
-          email: user.email || '',
-          contact: user.phone || '',
-        },
-        theme: {
-          color: colors.primary,
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    } else {
-      // Native WebView-based Razorpay checkout
-      try {
-        const backendUrl = getBackendUrl();
-        const description = encodeURIComponent('Order of Pooja Samagri Items');
-        const name = encodeURIComponent(user.name || '');
-        const email = encodeURIComponent(user.email || '');
-        const contact = encodeURIComponent(user.phone || '');
-        const amount = grandTotal;
-
-        const redirectUrl = Linking.createURL('payment-success');
-        const checkoutUrl = `${backendUrl}/api/payment/checkout?amount=${amount}&description=${description}&name=${name}&email=${email}&contact=${contact}&redirect_url=${encodeURIComponent(redirectUrl)}`;
-        console.log('[Razorpay Native] Opening checkout URL:', checkoutUrl);
-
-        const browserResult = await WebBrowser.openAuthSessionAsync(checkoutUrl, redirectUrl);
-
-        if (browserResult.type === 'success' && browserResult.url) {
-          console.log('[Razorpay Native] Payment success callback URL:', browserResult.url);
-          const parsedUrl = Linking.parse(browserResult.url);
-          const paymentId = parsedUrl.queryParams?.payment_id;
-
-          if (paymentId) {
-            console.log('[Razorpay Native] Payment ID found:', paymentId);
-            processBackendOrder(paymentId as string);
-          } else {
-            throw new Error('Payment verification ID not found.');
-          }
-        } else {
-          console.log('[Razorpay Native] Payment closed or cancelled.');
-          setIsCheckingOut(false);
-        }
-      } catch (err: any) {
-        console.log('[Razorpay Native] Error during mobile checkout:', err);
-        setError('Payment flow failed: ' + err.message);
-        setIsCheckingOut(false);
-      }
-    }
+    // Direct seamless navigation to in-app Payment Options screen (Flipkart style)
+    router.push({
+      pathname: '/payment-options',
+      params: {
+        type: 'order',
+        amount: grandTotal.toString(),
+        delivery: delivery.toString(),
+        addressId: selectedAddress.id.toString(),
+      },
+    });
   };
 
   const renderAddressSection = () => {
@@ -303,11 +234,20 @@ export default function CartScreen() {
     );
   };
 
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPadding + 12, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={handleBack} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={colors.primary} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Cart & Checkout</Text>

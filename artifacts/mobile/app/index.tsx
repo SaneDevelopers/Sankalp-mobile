@@ -33,7 +33,10 @@ export default function SplashScreen() {
     hasNavigated.current = true;
     try {
       const token = await AsyncStorage.getItem('auth_token');
-      if (token) {
+      const profileCompleted = await AsyncStorage.getItem('profile_completed');
+      if (token && profileCompleted === 'false') {
+        router.replace('/complete-profile');
+      } else if (token) {
         router.replace('/(tabs)');
       } else {
         router.replace('/login');

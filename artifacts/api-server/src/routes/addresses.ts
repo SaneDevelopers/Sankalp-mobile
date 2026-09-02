@@ -12,11 +12,14 @@ router.use(requireAuth);
 router.get("/", async (req, res) => {
   try {
     const userId = req.user!.userId;
+    console.log(`[API /addresses] GET /addresses called by userId: ${userId}`);
     const list = await db
       .select()
       .from(addressesTable)
       .where(eq(addressesTable.userId, userId))
       .orderBy(addressesTable.id);
+
+    console.log(`[API /addresses] Found ${list.length} addresses for userId ${userId}:`, JSON.stringify(list));
 
     // Format response to match spec (map database types)
     res.json(
@@ -27,6 +30,7 @@ router.get("/", async (req, res) => {
       }))
     );
   } catch (err: any) {
+    console.error(`[API /addresses] Error:`, err);
     res.status(500).json({ message: err.message || "Failed to retrieve addresses" });
   }
 });

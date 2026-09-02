@@ -1,6 +1,19 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const path = require("path");
 
-const config = getDefaultConfig(__dirname);
+const projectRoot = __dirname;
+const workspaceRoot = path.resolve(projectRoot, "../..");
+
+const config = getDefaultConfig(projectRoot);
+
+// Watch both project and workspace root for pnpm monorepo symlinks
+config.watchFolders = [workspaceRoot];
+
+// Ensure Metro resolves modules from project node_modules and workspace root node_modules
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, "node_modules"),
+  path.resolve(workspaceRoot, "node_modules"),
+];
 
 // Packages that use private class fields (#field) or ES2022+ syntax
 // must be explicitly included here so Metro/Babel transpiles them
@@ -22,6 +35,7 @@ const TRANSPILE_PACKAGES = [
   "@react-native-async-storage",
   "@expo-google-fonts",
   "@expo/vector-icons",
+  "react-native-webview",
 ];
 
 config.transformer = {

@@ -40,6 +40,7 @@ const MENU_ITEMS = [
   { id: 'm7', labelKey: 'helpSupport', icon: 'help-circle', route: '/help' },
   { id: 'm9', labelKey: 'contactSupport', icon: 'message-square', route: '/contact-support' },
   { id: 'm8', labelKey: 'settings', icon: 'settings', route: '/settings' },
+  { id: 'm10', labelKey: 'adminConsole', icon: 'shield', route: '/admin' },
 ];
 
 export default function ProfileScreen() {
@@ -128,16 +129,20 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 20 }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Profile Header */}
-      <View style={[styles.profileHeader, { backgroundColor: colors.primary, paddingTop: topPadding + 24 }]}>
-        <View style={styles.omContainer}>
-          <Text style={styles.omSymbol}>ॐ</Text>
-        </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Pinned Status Bar Guard (Protects Status Bar & Dynamic Island) */}
+      <View style={{ height: topPadding, backgroundColor: colors.primary, zIndex: 100 }} />
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 20 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile Header */}
+        <View style={[styles.profileHeader, { backgroundColor: colors.primary, paddingTop: 16 }]}>
+          <View style={styles.omContainer}>
+            <Text style={styles.omSymbol}>ॐ</Text>
+          </View>
         <Pressable
           style={[styles.avatarRing, { borderColor: colors.gold }]}
           onPress={handleUploadProfileImage}
@@ -210,6 +215,7 @@ export default function ProfileScreen() {
         ))}
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -217,7 +223,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   profileHeader: {
     alignItems: 'center',
-    paddingBottom: 32,
+    paddingBottom: 28,
     paddingHorizontal: 20,
     position: 'relative',
     overflow: 'hidden',

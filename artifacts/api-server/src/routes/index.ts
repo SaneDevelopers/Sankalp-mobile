@@ -6,6 +6,7 @@ import bookingsRouter from "./bookings";
 import ordersRouter from "./orders";
 import panditsRouter from "./pandits";
 import storeItemsRouter from "./store-items";
+import paymentsRouter from "./payments";
 
 const router: IRouter = Router();
 
@@ -16,6 +17,7 @@ router.use("/bookings", bookingsRouter);
 router.use("/orders", ordersRouter);
 router.use("/pandits", panditsRouter);
 router.use("/store-items", storeItemsRouter);
+router.use("/payments", paymentsRouter);
 
 router.get("/payment/checkout", (req, res) => {
   const { amount, name, email, contact, description, redirect_url } = req.query;
@@ -87,21 +89,38 @@ router.get("/payment/checkout", (req, res) => {
                 },
                 handler: function (response) {
                     console.log('[PaymentSuccess]', response);
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                            type: 'PAYMENT_SUCCESS',
+                            paymentId: response.razorpay_payment_id
+                        }));
+                    }
                     window.location.href = "${successRedirect}" + (("${successRedirect}".indexOf('?') !== -1) ? "&" : "?") + "payment_id=" + response.razorpay_payment_id;
                 },
                 modal: {
                     ondismiss: function () {
                         console.log('[PaymentDismissed]');
+                        if (window.ReactNativeWebView) {
+                            window.ReactNativeWebView.postMessage(JSON.stringify({
+                                type: 'PAYMENT_CANCELLED'
+                            }));
+                        }
                         window.location.href = "${cancelRedirect}";
                     }
                 },
                 theme: {
-                    color: "#E25822"
+                    color: "#7B1F1F"
                 }
             };
             const rzp = new Razorpay(options);
             rzp.on('payment.failed', function (response){
                 console.log('[PaymentFailed]', response);
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'PAYMENT_FAILED',
+                        error: response.error?.description || 'Payment Failed'
+                    }));
+                }
                 window.location.href = "${cancelRedirect}";
             });
             rzp.open();

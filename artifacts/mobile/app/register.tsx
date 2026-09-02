@@ -143,7 +143,7 @@ export default function RegisterScreen() {
       console.log('[Register] Verified stored token:', stored ? stored.substring(0, 15) + '…' : 'NULL');
       
       await queryClient.invalidateQueries();
-      router.replace('/(tabs)');
+      router.replace('/complete-profile');
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Registration failed';
       setError(message);

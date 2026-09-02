@@ -147,6 +147,50 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// ── GET /google/callback ──────────────────────────────────────────────────────
+// Relay page that receives Google's OAuth redirect on http://localhost:5001/api/auth/google/callback
+// and bounces the id_token back into the mobile app (exp:// or mobile://) via the state parameter.
+router.get("/google/callback", (_req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sankalp - Signing in...</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #FAF3E8; color: #7B1F1F; text-align: center; }
+      .box { padding: 24px; border-radius: 16px; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 320px; }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h2>ॐ Sankalp</h2>
+      <p>Completing Google sign-in...</p>
+    </div>
+    <script>
+      (function() {
+        const hash = window.location.hash.substring(1);
+        const search = window.location.search.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        const searchParams = new URLSearchParams(search);
+        
+        // State carries the app return URL (exp://... or mobile://...)
+        const state = hashParams.get('state') || searchParams.get('state');
+        if (state) {
+          const target = decodeURIComponent(state);
+          const sep = target.includes('?') ? '&' : '?';
+          const payload = hash || search;
+          window.location.href = target + sep + payload;
+        } else {
+          document.querySelector('p').innerText = 'Signed in successfully! You can switch back to the app.';
+        }
+      })();
+    </script>
+  </body>
+</html>`);
+});
+
 // ── POST /google ──────────────────────────────────────────────────────────────
 
 router.post("/google", async (req, res) => {

@@ -17,11 +17,13 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
   const colors = useColors();
   const { lang, t, f } = useLanguage();
 
-  const tithiText = `${lang === 'hi' ? panchang.tithi.pakshaHi : panchang.tithi.pakshaEn} ${
-    lang === 'hi' ? panchang.tithi.hi : panchang.tithi.en
+  const isDevanagari = lang === 'hi' || lang === 'mr';
+
+  const tithiText = `${isDevanagari ? panchang.tithi.pakshaHi : panchang.tithi.pakshaEn} ${
+    isDevanagari ? panchang.tithi.hi : panchang.tithi.en
   }`;
-  const nakshatraText = lang === 'hi' ? panchang.nakshatra.hi : panchang.nakshatra.en;
-  const statusText = lang === 'hi' ? panchang.auspiciousStatus.hi : panchang.auspiciousStatus.en;
+  const nakshatraText = isDevanagari ? panchang.nakshatra.hi : panchang.nakshatra.en;
+  const statusText = isDevanagari ? panchang.auspiciousStatus.hi : panchang.auspiciousStatus.en;
   const isAuspicious = panchang.auspiciousStatus.isHighlyAuspicious;
 
   return (
@@ -33,7 +35,7 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
           <Text style={[styles.stripOm, { fontFamily: f('bold') }]}>ॐ</Text>
           <View>
             <Text style={[styles.stripTitle, { fontFamily: f('bold') }]}>
-              {lang === 'hi' ? 'हिन्दू पंचांग' : 'Hindu Panchang'}
+              {lang === 'en' ? 'Hindu Panchang' : lang === 'hi' ? 'हिन्दू पंचांग' : 'हिंदू पंचांग'}
             </Text>
             <Text style={[styles.stripSub, { fontFamily: f('regular') }]}>
               {statusText}
@@ -50,7 +52,7 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
             }}
           >
             <Text style={[styles.viewBtnText, { fontFamily: f('bold') }]}>
-              {lang === 'hi' ? 'विस्तार' : 'Details'}
+              {lang === 'en' ? 'Details' : lang === 'hi' ? 'विस्तार' : 'तपशील'}
             </Text>
             <Feather name="chevron-right" size={12} color="#FFFFFF" />
           </Pressable>
@@ -73,7 +75,7 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
             {tithiText}
           </Text>
           <Text style={[styles.blockSub, { color: colors.mutedForeground, fontFamily: f('regular') }]}>
-            {lang === 'hi' ? 'तक' : 'until'} {panchang.tithi.until}
+            {lang === 'mr' ? 'पर्यंत' : lang === 'hi' ? 'तक' : 'until'} {panchang.tithi.until}
           </Text>
         </View>
 
@@ -91,7 +93,7 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
             {nakshatraText}
           </Text>
           <Text style={[styles.blockSub, { color: colors.mutedForeground, fontFamily: f('regular') }]}>
-            {lang === 'hi' ? 'तक' : 'until'} {panchang.nakshatra.until}
+            {lang === 'mr' ? 'पर्यंत' : lang === 'hi' ? 'तक' : 'until'} {panchang.nakshatra.until}
           </Text>
         </View>
       </View>
@@ -144,7 +146,7 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
           <View style={styles.timingIconRow}>
             <View style={[styles.timingDot, { backgroundColor: '#F59E0B' }]} />
             <Text style={[styles.timingLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
-              {lang === 'hi' ? 'सूर्योदय' : 'Sunrise'}
+              {isDevanagari ? 'सूर्योदय' : 'Sunrise'}
             </Text>
           </View>
           <Text style={[styles.timingValue, { color: '#92400E', fontFamily: f('bold') }]}>
@@ -163,19 +165,19 @@ export function PanchangCard({ panchang, showFullDetails = false }: PanchangCard
           <View style={styles.yogaRow}>
             <View style={styles.yogaItem}>
               <Text style={[styles.yogaLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
-                {lang === 'hi' ? 'योग' : 'Yoga'}
+                {isDevanagari ? 'योग' : 'Yoga'}
               </Text>
               <Text style={[styles.yogaValue, { color: colors.text, fontFamily: f('semibold') }]}>
-                {lang === 'hi' ? panchang.yoga.hi : panchang.yoga.en}
+                {isDevanagari ? panchang.yoga.hi : panchang.yoga.en}
               </Text>
             </View>
             <View style={[styles.vertDivider, { backgroundColor: colors.border, height: 28 }]} />
             <View style={styles.yogaItem}>
               <Text style={[styles.yogaLabel, { color: colors.mutedForeground, fontFamily: f('medium') }]}>
-                {lang === 'hi' ? 'करण' : 'Karana'}
+                {isDevanagari ? 'करण' : 'Karana'}
               </Text>
               <Text style={[styles.yogaValue, { color: colors.text, fontFamily: f('semibold') }]}>
-                {lang === 'hi' ? panchang.karana.hi : panchang.karana.en}
+                {isDevanagari ? panchang.karana.hi : panchang.karana.en}
               </Text>
             </View>
           </View>

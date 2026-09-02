@@ -17,21 +17,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuthMe } from '@workspace/api-client-react';
+import { scheduleDailyPanchangNotification } from '@/lib/notifications';
 
 export default function SettingsScreen() {
   const colors = useColors();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const { data: user } = useAuthMe();
   const [bookingAlerts, setBookingAlerts] = useState(true);
   const [offerAlerts, setOfferAlerts] = useState(true);
   const [reminderAlerts, setReminderAlerts] = useState(true);
+  const [panchangAlerts, setPanchangAlerts] = useState(true);
   const [smsAlerts, setSmsAlerts] = useState(false);
-  const [lang, setLang] = useState<'en' | 'hi'>('en');
+  const [lang, setLang] = useState<'en' | 'hi' | 'mr'>('en');
 
   React.useEffect(() => {
     AsyncStorage.getItem('@sankalp:language').then(val => {
-      if (val === 'hi' || val === 'en') {
-        setLang(val as 'en' | 'hi');
+      if (val === 'hi' || val === 'en' || val === 'mr') {
+        setLang(val as 'en' | 'hi' | 'mr');
       }
     });
   }, []);
@@ -89,6 +93,17 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>NOTIFICATIONS</Text>
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <SwitchRow
+            label="Daily Panchang & Muhurat"
+            sub="Morning 6:30 AM Tithi & Muhurat alert"
+            value={panchangAlerts}
+            onChange={async (v) => {
+              setPanchangAlerts(v);
+              if (v) {
+                await scheduleDailyPanchangNotification(user?.city || 'Pune', lang);
+              }
+            }}
+          />
           <SwitchRow label="Booking Alerts" sub="Confirmations & updates" value={bookingAlerts} onChange={setBookingAlerts} />
           <SwitchRow label="Offers & Promotions" sub="Discounts & festival specials" value={offerAlerts} onChange={setOfferAlerts} />
           <SwitchRow label="Ritual Reminders" sub="24-hour advance reminder" value={reminderAlerts} onChange={setReminderAlerts} />
@@ -114,11 +129,11 @@ export default function SettingsScreen() {
           <LinkRow
             label="Language"
             icon="globe"
-            value={lang === 'en' ? 'English' : 'Hindi (हिंदी)'}
+            value={lang === 'en' ? 'English' : lang === 'hi' ? 'Hindi (हिंदी)' : 'Marathi (मराठी)'}
             onPress={() => {
               Alert.alert(
-                lang === 'en' ? 'Select Language' : 'भाषा चुनें',
-                lang === 'en' ? 'Choose your preferred language' : 'अपनी पसंदीदा भाषा चुनें',
+                lang === 'en' ? 'Select Language' : lang === 'hi' ? 'भाषा चुनें' : 'भाषा निवडा',
+                lang === 'en' ? 'Choose your preferred language' : lang === 'hi' ? 'अपनी पसंदीदा भाषा चुनें' : 'आपली आवडती भाषा निवडा',
                 [
                   {
                     text: 'English',
@@ -126,7 +141,6 @@ export default function SettingsScreen() {
                       setLang('en');
                       await AsyncStorage.setItem('@sankalp:language', 'en');
                       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                      // Invalidate home page query or cache to update language immediately
                       queryClient.clear();
                     }
                   },
@@ -140,7 +154,16 @@ export default function SettingsScreen() {
                     }
                   },
                   {
-                    text: lang === 'en' ? 'Cancel' : 'रद्द करें',
+                    text: 'Marathi (मराठी)',
+                    onPress: async () => {
+                      setLang('mr');
+                      await AsyncStorage.setItem('@sankalp:language', 'mr');
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      queryClient.clear();
+                    }
+                  },
+                  {
+                    text: lang === 'en' ? 'Cancel' : lang === 'hi' ? 'रद्द करें' : 'रद्द करा',
                     style: 'cancel'
                   }
                 ]
@@ -156,6 +179,17 @@ export default function SettingsScreen() {
           <LinkRow label="Privacy Policy" icon="shield" onPress={() => {}} />
           <LinkRow label="Terms of Service" icon="file-text" onPress={() => {}} />
           <LinkRow label="About Sankalp" icon="info" onPress={() => {}} />
+        </View>
+
+        {/* Administration */}
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ADMINISTRATION</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <LinkRow
+            label="Admin Console"
+            icon="shield"
+            color={colors.primary}
+            onPress={() => router.push('/admin' as any)}
+          />
         </View>
 
         {/* Version */}
@@ -177,7 +211,6 @@ export default function SettingsScreen() {
             }}
             destructive
           />
-          <LinkRow label="Delete Account" icon="trash-2" color={colors.destructive} onPress={() => {}} destructive />
         </View>
       </ScrollView>
     </View>

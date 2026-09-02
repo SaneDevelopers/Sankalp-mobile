@@ -21,80 +21,58 @@ import { FESTIVAL_BANNER, PANDIT_IMAGES, STORE_IMAGES, POOJA_IMAGES } from '@/co
 import { useColors } from '@/hooks/useColors';
 import {
   useAuthMe,
-  useAuthUpdateProfile,
-  getAuthMeQueryKey,
   useGetAddresses,
+  getGetAddressesQueryKey,
 } from '@workspace/api-client-react';
 import { useLanguage } from '@/lib/context/LanguageContext';
 import { Image as ExpoImage } from 'expo-image';
-import { useImageUpload } from '@/hooks/useImageUpload';
-import { useQueryClient } from '@tanstack/react-query';
 import { BannerSlider } from '@/components/BannerSlider';
 import { PanchangCard } from '@/components/PanchangCard';
 import { getHomeBanners, BannerSlide, DEFAULT_BANNERS } from '@/lib/banners';
 import { getPanchangForDate } from '@/constants/panchang';
-import { requestNotificationPermission } from '@/lib/notifications';
+import {
+  requestNotificationPermission,
+  scheduleDailyPanchangNotification,
+  sendInstantPanchangPreview,
+} from '@/lib/notifications';
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const TAB_BAR_HEIGHT = Platform.OS === 'web' ? 70 : (56 + Math.max(insets?.bottom ?? 0, 6));
-  const navigation = useNavigation();
   const [search, setSearch] = useState('');
   const [banners, setBanners] = useState<BannerSlide[]>(DEFAULT_BANNERS);
   const { lang, setLang, t, f } = useLanguage();
   const topPadding = Platform.OS === 'web' ? 12 : (insets?.top ?? 0);
 
-  const todayPanchang = getPanchangForDate(new Date());
-
-  React.useEffect(() => {
-    getHomeBanners().then(setBanners);
-  }, []);
-
-  const handleLanguageChange = (newLang: 'en' | 'hi') => {
+  const handleLanguageChange = (newLang: 'en' | 'hi' | 'mr') => {
     if (newLang === lang) return;
     Haptics.selectionAsync();
     setLang(newLang);
   };
 
+  React.useEffect(() => {
+    getHomeBanners().then(setBanners);
+  }, []);
+
   const { data: user } = useAuthMe();
   const { data: addresses = [] } = useGetAddresses({
     query: {
       enabled: !!user,
-      queryKey: ['/api/addresses', user?.id],
+      queryKey: getGetAddressesQueryKey(),
     }
   });
   
   const defaultAddress = addresses.find(a => a.isDefault) || addresses[0];
+  const userCity = defaultAddress?.city || user?.city || 'Pune';
   const displayLocation = defaultAddress 
     ? `${defaultAddress.city}, ${defaultAddress.pincode}`
     : user?.city 
       ? `${user.city}, Maharashtra` 
       : t('location');
-  const queryClient = useQueryClient();
-  const { pickAndUploadImage, uploading } = useImageUpload();
-  const { mutateAsync: updateProfile } = useAuthUpdateProfile();
 
-  const handleUploadProfileImage = async () => {
-    if (!user) {
-      router.push('/(tabs)/profile');
-      return;
-    }
-    const url = await pickAndUploadImage();
-    if (url) {
-      try {
-        await updateProfile({
-          data: {
-            name: user.name,
-            profileImage: url,
-          }
-        });
-        queryClient.invalidateQueries({ queryKey: getAuthMeQueryKey() });
-      } catch (err) {
-        console.error('Error updating profile image:', err);
-      }
-    }
-  };
+  const todayPanchang = getPanchangForDate(new Date(), userCity);
+
 
   const avatarLetter = user?.name ? user.name[0].toUpperCase() : "G";
   const displayName = user?.name ? user.name.toUpperCase() : t('guest');
@@ -113,106 +91,107 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 20 }}
-      >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: topPadding + 4 }]}>
-          {/* Left: Big Title */}
-          <View style={{ flex: 1, marginRight: 8, justifyContent: 'flex-end' }}>
-            <Text style={[styles.title, { color: colors.primary, fontFamily: f('bold') }]} numberOfLines={2} adjustsFontSizeToFit>
-              {greetingText.line1}{'\n'}{greetingText.line2}
+      {/* Pinned Top Navigation Bar (Protected from scroll overlap) */}
+      <View style={[styles.fixedHeader, { paddingTop: topPadding + 6, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        {/* Top Row: Greeting & Actions */}
+        <View style={styles.headerTopRow}>
+          {/* Left: Greeting + Location */}
+          <View style={{ flex: 1, marginRight: 8, justifyContent: 'center' }}>
+            <Text style={[styles.greetingTitle, { color: colors.primary, fontFamily: f('bold') }]} numberOfLines={1}>
+              {greetingText.line1} {greetingText.line2}
             </Text>
+            <View style={styles.locationRow}>
+              <Feather name="map-pin" size={10} color={colors.primary} />
+              <Text style={[styles.locationText, { color: colors.mutedForeground, fontFamily: f('semibold') }]} numberOfLines={1}>
+                {displayName} · {displayLocation}
+              </Text>
+            </View>
           </View>
 
-          {/* Right: Icons on top, Name+Location at bottom */}
-          <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', minHeight: 80 }}>
-            {/* Top: Lang + Bell + Avatar */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                <Pressable
-                  onPress={() => handleLanguageChange('hi')}
-                  style={[
-                    styles.langToggleItem,
-                    lang === 'hi' && { backgroundColor: colors.primary }
-                  ]}
-                >
-                  <Text style={[
-                    styles.langToggleText,
-                    { color: lang === 'hi' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
-                  ]}>
-                    HI
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => handleLanguageChange('en')}
-                  style={[
-                    styles.langToggleItem,
-                    lang === 'en' && { backgroundColor: colors.primary }
-                  ]}
-                >
-                  <Text style={[
-                    styles.langToggleText,
-                    { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
-                  ]}>
-                    ENG
-                  </Text>
-                </Pressable>
-              </View>
+          {/* Right: Lang + Bell + Avatar */}
+          <View style={styles.headerActions}>
+            <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
               <Pressable
-                style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={async () => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  await requestNotificationPermission();
-                }}
+                onPress={() => handleLanguageChange('en')}
+                style={[
+                  styles.langToggleItem,
+                  lang === 'en' && { backgroundColor: colors.primary }
+                ]}
               >
-                <Feather name="bell" size={20} color={colors.primary} />
+                <Text style={[
+                  styles.langToggleText,
+                  { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+                ]}>
+                  EN
+                </Text>
               </Pressable>
               <Pressable
-                style={[styles.avatarBtn, { backgroundColor: colors.primary }]}
-                onPress={handleUploadProfileImage}
-                disabled={uploading}
+                onPress={() => handleLanguageChange('hi')}
+                style={[
+                  styles.langToggleItem,
+                  lang === 'hi' && { backgroundColor: colors.primary }
+                ]}
               >
-                <View style={{ width: 40, height: 40, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-                  {user?.profileImage ? (
-                    <ExpoImage
-                      source={{ uri: user.profileImage }}
-                      style={styles.avatarImage}
-                      contentFit="cover"
-                      transition={200}
-                    />
-                  ) : (
-                    <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
-                  )}
-                  {uploading && (
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }]}>
-                      <ActivityIndicator color="#FFFFFF" size="small" />
-                    </View>
-                  )}
-                </View>
-                {user && (
-                  <View style={[styles.cameraBadgeSmall, { backgroundColor: colors.gold }]}>
-                    <Feather name="camera" size={6} color="#FFFFFF" />
-                  </View>
-                )}
+                <Text style={[
+                  styles.langToggleText,
+                  { color: lang === 'hi' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+                ]}>
+                  HI
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleLanguageChange('mr')}
+                style={[
+                  styles.langToggleItem,
+                  lang === 'mr' && { backgroundColor: colors.primary }
+                ]}
+              >
+                <Text style={[
+                  styles.langToggleText,
+                  { color: lang === 'mr' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+                ]}>
+                  MR
+                </Text>
               </Pressable>
             </View>
 
-            {/* Bottom: Name + Location */}
-            <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
-              <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: f('semibold'), textAlign: 'right' }]}>{t('namaste')}, {displayName}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                <Feather name="map-pin" size={10} color={colors.primary} />
-                <Text style={{ fontSize: 10, color: colors.primary, fontFamily: f('semibold'), letterSpacing: 0.3 }}>{displayLocation}</Text>
+            <Pressable
+              style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                await scheduleDailyPanchangNotification(userCity, lang);
+                await sendInstantPanchangPreview(userCity, lang);
+              }}
+            >
+              <Feather name="bell" size={18} color={colors.primary} />
+            </Pressable>
+
+            <Pressable
+              style={[styles.avatarBtn, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/(tabs)/profile' as any);
+              }}
+            >
+              <View style={{ width: 36, height: 36, borderRadius: 18, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+                {user?.profileImage ? (
+                  <ExpoImage
+                    source={{ uri: user.profileImage }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                ) : (
+                  <Text style={[styles.avatarText, { fontFamily: f('bold') }]}>{avatarLetter}</Text>
+                )}
               </View>
-            </View>
+            </Pressable>
           </View>
         </View>
 
-        {/* Search */}
+        {/* Search Bar inside Fixed Header */}
         <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Feather name="search" size={18} color={colors.mutedForeground} />
+          <Feather name="search" size={17} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.text, fontFamily: f('regular') }]}
             placeholder={t("searchPlaceholder")}
@@ -220,7 +199,19 @@ export default function HomeScreen() {
             value={search}
             onChangeText={setSearch}
           />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')} hitSlop={8}>
+              <Feather name="x-circle" size={16} color={colors.mutedForeground} />
+            </Pressable>
+          )}
         </View>
+      </View>
+
+      {/* Main Scrollable Feed */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 14, paddingBottom: TAB_BAR_HEIGHT + 20 }}
+      >
 
         {/* Tithi Strip — Panchang shortcut */}
         <Pressable
@@ -233,10 +224,12 @@ export default function HomeScreen() {
           <Text style={[styles.tithiStripOm, { fontFamily: f('bold') }]}>ॐ</Text>
           <View style={styles.tithiStripCenter}>
             <Text style={[styles.tithiStripLabel, { fontFamily: f('medium') }]}>
-              {lang === 'hi' ? 'आज की तिथि' : "Today's Tithi"}
+              {lang === 'mr' ? 'आजची तिथी (महाराष्ट्र पंचांग)' : lang === 'hi' ? 'आज की तिथि (पंचांग)' : "Today's Tithi"}
             </Text>
             <Text style={[styles.tithiStripValue, { fontFamily: f('bold') }]}>
-              {lang === 'hi'
+              {lang === 'mr'
+                ? `${todayPanchang.tithi.pakshaMr} ${todayPanchang.tithi.mr} · ${todayPanchang.nakshatra.mr}`
+                : lang === 'hi'
                 ? `${todayPanchang.tithi.pakshaHi} ${todayPanchang.tithi.hi} · ${todayPanchang.nakshatra.hi}`
                 : `${todayPanchang.tithi.pakshaEn} ${todayPanchang.tithi.en} · ${todayPanchang.nakshatra.en}`}
             </Text>
@@ -245,7 +238,11 @@ export default function HomeScreen() {
             <Text style={[styles.tithiStripStatusDot,
               { color: todayPanchang.auspiciousStatus.isHighlyAuspicious ? '#4ADE80' : '#FCD34D' }]}>●</Text>
             <Text style={[styles.tithiStripStatus, { fontFamily: f('semibold') }]}>
-              {lang === 'hi' ? todayPanchang.auspiciousStatus.hi : todayPanchang.auspiciousStatus.en}
+              {lang === 'mr'
+                ? todayPanchang.auspiciousStatus.mr
+                : lang === 'hi'
+                ? todayPanchang.auspiciousStatus.hi
+                : todayPanchang.auspiciousStatus.en}
             </Text>
             <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.7)" />
           </View>
@@ -392,16 +389,48 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 20,
-    marginBottom: 7,
+  fixedHeader: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    zIndex: 100,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {},
+    }),
   },
-  greeting: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 2, marginBottom: 4 },
-  title: { fontSize: 28, fontFamily: 'Inter_700Bold', lineHeight: 34 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  greetingTitle: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  locationText: {
+    fontSize: 11,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   langToggleContainer: {
     flexDirection: 'row',
     borderRadius: 20,
@@ -410,38 +439,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   langToggleItem: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 16,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 32,
+    minWidth: 28,
   },
   langToggleText: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Inter_700Bold',
   },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  avatarBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 16 },
-  avatarImage: { width: 40, height: 40, borderRadius: 20 },
-  cameraBadgeSmall: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderWidth: 1,
+  },
+  avatarBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 15,
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   searchContainer: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 20,
-    paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1, gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, padding: 0 },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    padding: 0,
+  },
   festivalBanner: {
     marginHorizontal: 20, borderRadius: 16, marginBottom: 24,
     overflow: 'hidden', height: 180, position: 'relative',

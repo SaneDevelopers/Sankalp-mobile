@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Platform,
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Switch,
   KeyboardAvoidingView,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -52,8 +53,18 @@ export default function AddressesScreen() {
     query: {
       enabled: !!user,
       queryKey: getGetAddressesQueryKey(),
+      refetchOnMount: 'always',
+      staleTime: 0,
     },
   });
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        refetch();
+      }
+    }, [user, refetch])
+  );
 
   const createAddressMutation = useCreateAddress();
   const updateAddressMutation = useUpdateAddress();
@@ -293,7 +304,18 @@ export default function AddressesScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refetch}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+        >
           {addresses.map(addr => {
             const iconColor = ICON_COLORS[addr.label.toLowerCase()] || ICON_COLORS['other'];
             const iconName = addr.label.toLowerCase() === 'home' ? 'home' : addr.label.toLowerCase() === 'office' ? 'briefcase' : 'map-pin';

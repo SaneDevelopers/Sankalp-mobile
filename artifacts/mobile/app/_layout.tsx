@@ -25,10 +25,19 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CartProvider } from "@/lib/context/CartContext";
 import { NotificationProvider } from "@/lib/context/NotificationContext";
 import { LanguageProvider } from "@/lib/context/LanguageContext";
-import { Platform, StatusBar as RNStatusBar } from "react-native";
+import { Platform, StatusBar as RNStatusBar, LogBox } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import Constants from "expo-constants";
+
+LogBox.ignoreLogs([
+  '[expo-av]',
+  'Expo AV has been deprecated',
+  'expo-notifications',
+  '`expo-notifications` functionality is not fully supported in Expo Go',
+  'Android Push notifications (remote notifications) functionality',
+  'Video component from `expo-av` is deprecated',
+]);
 
 SplashScreen.preventAutoHideAsync();
 
@@ -96,8 +105,10 @@ function RootLayoutNav() {
       <Stack.Screen name="product/[id]" />
       <Stack.Screen name="review/[id]" />
       <Stack.Screen name="cart" />
+      <Stack.Screen name="payment-options" />
       <Stack.Screen name="confirmed" />
       <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="complete-profile" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="help" />
       <Stack.Screen name="contact-support" />

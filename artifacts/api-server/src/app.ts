@@ -49,6 +49,9 @@ app.get("/", (_req, res) => {
 
 app.use("/api", router);
 
+// Direct alias routes so /auth/google/callback and /api/auth/google/callback both work
+app.use("/auth", router);
+
 app.get("/payment/checkout", (req, res) => {
   res.redirect(`/api/payment/checkout?${new URLSearchParams(req.query as any).toString()}`);
 });

@@ -93,6 +93,8 @@ export default function BookScreen() {
   const [showPoojaSelect, setShowPoojaSelect] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const [checkoutModalUrl, setCheckoutModalUrl] = useState('');
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState('');
 
@@ -198,6 +200,75 @@ export default function BookScreen() {
     );
   };
 
+  const processBackendBooking = async (paymentId?: string) => {
+    try {
+      const dateText = `${DATES[selectedDate].date} ${DATES[selectedDate].month}`;
+      const timeText = pandit.muhurats[selectedTime];
+
+      const res = await createBookingMutation.mutateAsync({
+        data: {
+          poojaId: selectedPooja.id,
+          poojaName: selectedPooja.name,
+          panditId: pandit.id.toString(),
+          panditName: pandit.name,
+          panditColor: pandit.avatarColor,
+          panditInitials: pandit.initials,
+          date: dateText,
+          time: timeText,
+          amount: selectedPooja.price,
+        },
+      });
+
+      // If there are recommended items in the cart, place a corresponding order for them
+      if (cartItems.length > 0) {
+        const orderItems = cartItems.map(item => ({
+          name: item.name,
+          qty: item.quantity,
+          price: item.price,
+          unit: item.unit || 'pcs'
+        }));
+        const delivery = 0;
+        const addressText = selectedAddress
+          ? `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`
+          : 'Ritual Address';
+
+        await createOrderMutation.mutateAsync({
+          data: {
+            items: orderItems,
+            amount: samagriTotal,
+            delivery,
+            addressText,
+          }
+        });
+        clearCart();
+      }
+
+      // Save to latest_booking so confirmed.tsx can read it
+      const bookingDetail = {
+        ...res,
+        poojaName: res.poojaName,
+        panditName: res.panditName,
+        date: res.date,
+        time: res.time,
+        amount: totalAmount, // Show the overall total amount paid
+        panditInitials: res.panditInitials,
+        panditColor: res.panditColor,
+        bookingId: res.bookingId,
+        status: res.status,
+        paymentId: paymentId || 'mock_payment_id',
+      };
+
+      await AsyncStorage.setItem('@sankalp:latest_booking', JSON.stringify(bookingDetail));
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push('/confirmed' as any);
+    } catch (err: any) {
+      setError(err?.data?.message || err?.message || 'Failed to place booking');
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
   const handleBooking = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError('');
@@ -207,8 +278,9 @@ export default function BookScreen() {
       return;
     }
 
-    if (addresses.length === 0) {
-      setError('Please add a saved address for the pandit to visit');
+    if (addresses.length === 0 || !user.phone) {
+      setError('Please add your visiting address and phone number to continue');
+      router.push('/complete-profile');
       return;
     }
 
@@ -217,158 +289,26 @@ export default function BookScreen() {
       return;
     }
 
-    setIsBooking(true);
+    const dateText = `${DATES[selectedDate].date} ${DATES[selectedDate].month}`;
+    const timeText = pandit.muhurats[selectedTime];
 
-    const processBackendBooking = async (paymentId?: string) => {
-      try {
-        const dateText = `${DATES[selectedDate].date} ${DATES[selectedDate].month}`;
-        const timeText = pandit.muhurats[selectedTime];
-
-        const res = await createBookingMutation.mutateAsync({
-          data: {
-            poojaId: selectedPooja.id,
-            poojaName: selectedPooja.name,
-            panditId: pandit.id.toString(),
-            panditName: pandit.name,
-            panditColor: pandit.avatarColor,
-            panditInitials: pandit.initials,
-            date: dateText,
-            time: timeText,
-            amount: selectedPooja.price,
-          },
-        });
-
-        // If there are recommended items in the cart, place a corresponding order for them
-        if (cartItems.length > 0) {
-          const orderItems = cartItems.map(item => ({
-            name: item.name,
-            qty: item.quantity,
-            price: item.price,
-            unit: item.unit || 'pcs'
-          }));
-          const delivery = 0;
-          const addressText = selectedAddress
-            ? `${selectedAddress.label} · ${selectedAddress.name}, ${selectedAddress.address}, ${selectedAddress.city} – ${selectedAddress.pincode}, Phone: ${selectedAddress.phone}`
-            : 'Ritual Address';
-
-          await createOrderMutation.mutateAsync({
-            data: {
-              items: orderItems,
-              amount: samagriTotal,
-              delivery,
-              addressText,
-            }
-          });
-          clearCart();
-        }
-
-        // Save to latest_booking so confirmed.tsx can read it
-        const bookingDetail = {
-          ...res,
-          poojaName: res.poojaName,
-          panditName: res.panditName,
-          date: res.date,
-          time: res.time,
-          amount: totalAmount, // Show the overall total amount paid
-          panditInitials: res.panditInitials,
-          panditColor: res.panditColor,
-          bookingId: res.bookingId,
-          status: res.status,
-          paymentId: paymentId || 'mock_payment_id',
-        };
-
-        await AsyncStorage.setItem('@sankalp:latest_booking', JSON.stringify(bookingDetail));
-
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.push('/confirmed' as any);
-      } catch (err: any) {
-        setError(err?.data?.message || err?.message || 'Failed to place booking');
-      } finally {
-        setIsBooking(false);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      const loaded = await loadRazorpayScript();
-      if (!loaded) {
-        setError('Failed to load payment gateway. Please check your internet connection.');
-        setIsBooking(false);
-        return;
-      }
-
-      const options = {
-        key: 'rzp_test_RrQEP8mxFd8g3W',
-        amount: totalAmount * 100, // Amount in paise
-        currency: 'INR',
-        name: 'Sankalp Booking',
-        description: `Booking Acharya for ${selectedPooja.name}`,
-        image: 'https://cdn-icons-png.flaticon.com/512/2913/2913520.png',
-        handler: function (response: any) {
-          console.log('[Razorpay] Payment Success:', response);
-          processBackendBooking(response.razorpay_payment_id);
-        },
-        modal: {
-          ondismiss: function () {
-            setIsBooking(false);
-            if (typeof window !== 'undefined') {
-              const simulate = window.confirm('Razorpay checkout closed. Would you like to simulate a successful payment to test the booking flow?');
-              if (simulate) {
-                setIsBooking(true);
-                processBackendBooking('mock_web_payment_' + Date.now());
-              }
-            }
-          }
-        },
-        prefill: {
-          name: user.name || '',
-          email: user.email || '',
-          contact: user.phone || '',
-        },
-        theme: {
-          color: colors.primary,
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    } else {
-      // Native WebView-based Razorpay checkout
-      try {
-        const backendUrl = getBackendUrl();
-        const description = encodeURIComponent(`Booking Acharya for ${selectedPooja.name}`);
-        const name = encodeURIComponent(user.name || '');
-        const email = encodeURIComponent(user.email || '');
-        const contact = encodeURIComponent(user.phone || '');
-        const amount = totalAmount;
-
-        const redirectUrl = Linking.createURL('payment-success');
-        const checkoutUrl = `${backendUrl}/api/payment/checkout?amount=${amount}&description=${description}&name=${name}&email=${email}&contact=${contact}&redirect_url=${encodeURIComponent(redirectUrl)}`;
-        console.log('[Razorpay Native] Opening checkout URL:', checkoutUrl);
-
-        const browserResult = await WebBrowser.openAuthSessionAsync(checkoutUrl, redirectUrl);
-
-        if (browserResult.type === 'success' && browserResult.url) {
-          console.log('[Razorpay Native] Payment success callback URL:', browserResult.url);
-          // Parse the payment_id parameter from the redirect url
-          const parsedUrl = Linking.parse(browserResult.url);
-          const paymentId = parsedUrl.queryParams?.payment_id;
-
-          if (paymentId) {
-            console.log('[Razorpay Native] Payment ID found:', paymentId);
-            processBackendBooking(paymentId as string);
-          } else {
-            throw new Error('Payment verification ID not found.');
-          }
-        } else {
-          console.log('[Razorpay Native] Payment closed or cancelled.');
-          setIsBooking(false);
-        }
-      } catch (err: any) {
-        console.log('[Razorpay Native] Error during mobile checkout:', err);
-        setError('Payment flow failed: ' + err.message);
-        setIsBooking(false);
-      }
-    }
+    // Direct seamless navigation to in-app Payment Options screen (Flipkart style)
+    router.push({
+      pathname: '/payment-options',
+      params: {
+        type: 'booking',
+        poojaId: selectedPooja.id,
+        poojaName: selectedPooja.name,
+        panditId: pandit.id.toString(),
+        panditName: pandit.name,
+        panditColor: pandit.avatarColor,
+        panditInitials: pandit.initials,
+        date: dateText,
+        time: timeText,
+        amount: totalAmount.toString(),
+        addressId: selectedAddress.id.toString(),
+      },
+    });
   };
 
   const renderAddressSection = () => {
@@ -404,15 +344,17 @@ export default function BookScreen() {
       return (
         <Pressable
           style={[styles.addressCard, { backgroundColor: colors.card, borderColor: colors.primary, borderStyle: 'dashed' }]}
-          onPress={() => router.push('/addresses')}
+          onPress={() => router.push('/complete-profile')}
         >
           <View style={[styles.addressIcon, { backgroundColor: colors.primary + '15' }]}>
             <Feather name="plus" size={14} color={colors.primary} />
           </View>
           <View style={styles.addressInfo}>
-            <Text style={[styles.addressTitle, { color: colors.primary }]}>Add Visiting Address</Text>
-            <Text style={[styles.addressText, { color: colors.mutedForeground }]}>
-              You have no saved addresses. Tap to add one now.
+            <Text style={[styles.addressTitle, { color: colors.primary, fontFamily: 'Poppins_600SemiBold' }]}>
+              Add Visiting Address & Phone
+            </Text>
+            <Text style={[styles.addressText, { color: colors.mutedForeground }]} numberOfLines={1}>
+              Tap to complete your address and phone number for the pandit.
             </Text>
           </View>
           <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
@@ -438,6 +380,9 @@ export default function BookScreen() {
           <Text style={[styles.addressText, { color: colors.mutedForeground }]} numberOfLines={1}>
             {addr.address}, {addr.city} – {addr.pincode}
           </Text>
+          <Text style={{ fontSize: 11, color: colors.primary, marginTop: 2, fontFamily: 'Poppins_600SemiBold' }}>
+            📞 +91 {addr.phone || user?.phone || ''}
+          </Text>
         </View>
         <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
       </Pressable>
@@ -445,6 +390,15 @@ export default function BookScreen() {
   };
 
   const imageSource = PANDIT_IMAGES[pandit.id] || PANDIT_IMAGES['1'];
+
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -458,7 +412,7 @@ export default function BookScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 + bottomPadding }}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: error ? 10 : topPadding + 12, borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={handleBack} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color={colors.primary} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Book Ritual</Text>

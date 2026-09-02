@@ -21,7 +21,6 @@ import * as Linking from 'expo-linking';
 import { useColors } from '@/hooks/useColors';
 import { useAuthLogin, useAuthGoogle } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -68,7 +67,12 @@ export default function LoginScreen() {
       console.log('[Login] Verified stored token:', stored ? stored.substring(0, 15) + '…' : 'NULL');
       
       await queryClient.invalidateQueries();
-      router.replace('/(tabs)');
+      
+      if (!result.user?.phone || !result.user?.city) {
+        router.replace('/complete-profile');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Invalid credentials';
       setError(message);
@@ -82,150 +86,94 @@ export default function LoginScreen() {
     let idToken = '';
 
     try {
-      // 1. Try native Google Sign-in first
+      // 1. Try native Google Sign-in if running in a native build
       try {
         const { NativeModules } = require('react-native');
         const hasNativeModule = !!NativeModules.RNGoogleSignin;
         
         if (hasNativeModule) {
           const { GoogleSignin } = require('@react-native-google-signin/google-signin');
-          const hasPlay = await GoogleSignin.hasPlayServices();
-          if (hasPlay) {
-            const userInfo = await GoogleSignin.signIn();
-            idToken = userInfo.idToken;
-          }
+          const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '610138812117-s4n6t0v73bto8fu1lsve3an7ombkr399.apps.googleusercontent.com';
+          GoogleSignin.configure({ webClientId });
+          await GoogleSignin.hasPlayServices();
+          const response = await GoogleSignin.signIn();
+          idToken = response.data?.idToken || response.idToken;
         }
-      } catch (err) {
-        console.log('Google Sign-In native module not available or not configured:', err);
+      } catch (nativeErr) {
+        console.log('[GoogleLogin] Native module not active or in Expo Go:', nativeErr);
       }
 
-      let supabaseToken = '';
+      // 2. Direct Web OAuth with Google via backend callback relay
+      if (!idToken) {
+        const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '610138812117-s4n6t0v73bto8fu1lsve3an7ombkr399.apps.googleusercontent.com';
+        
+        // App return URL (exp://... in Expo Go or mobile:// in production)
+        const appReturnUrl = Linking.createURL('login');
 
-      if (idToken) {
-        // Native Google Sign-in succeeded. Sign in to Supabase with the ID Token
-        console.log('[GoogleLogin] Native token found. Authenticating with Supabase...');
-        const { data, error: supabaseError } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: idToken,
-        });
-
-        if (supabaseError) throw supabaseError;
-        if (!data.session) throw new Error('No Supabase session returned');
-        supabaseToken = data.session.access_token;
-      } else {
-        // 2. Native sign-in not available or failed. Fallback to Web Redirect OAuth via Supabase
-        console.log('[GoogleLogin] Falling back to Web-based Redirect OAuth...');
-        const redirectUrl = Platform.OS === 'web'
+        // Google requires http:// or https:// (rejects custom schemes like exp://)
+        // We use our backend relay which Google accepts, and the relay bounces back to appReturnUrl
+        const redirectUri = Platform.OS === 'web'
           ? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081')
-          : Linking.createURL('login');
-        console.log('[GoogleLogin] Redirect URL:', redirectUrl);
+          : 'http://localhost:5001/api/auth/google/callback';
 
-        try {
-          const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: redirectUrl,
-              skipBrowserRedirect: true,
-            },
-          });
+        const nonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+        
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${encodeURIComponent(clientId)}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=id_token%20token` +
+          `&scope=${encodeURIComponent('openid email profile')}` +
+          `&nonce=${encodeURIComponent(nonce)}` +
+          `&state=${encodeURIComponent(appReturnUrl)}` +
+          `&prompt=select_account`;
 
-          if (oauthError) throw oauthError;
-          if (!data?.url) throw new Error('No OAuth URL returned');
+        console.log('[GoogleLogin] Opening direct Google OAuth session via callback relay...');
+        const browserResult = await WebBrowser.openAuthSessionAsync(googleAuthUrl, appReturnUrl);
 
-          console.log('[GoogleLogin] Opening browser auth session...');
-          const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-
-          if (browserResult.type === 'success' && browserResult.url) {
-            console.log('[GoogleLogin] OAuth callback URL:', browserResult.url);
+        if (browserResult.type === 'success' && browserResult.url) {
+          console.log('[GoogleLogin] Direct Google OAuth returned successfully');
+          
+          // Parse id_token from hash fragment or query params
+          const urlPart = browserResult.url.includes('#') 
+            ? browserResult.url.split('#')[1] 
+            : (browserResult.url.includes('?') ? browserResult.url.split('?')[1] : '');
             
-            // Parse hash fragment or query params
-            const urlPart = browserResult.url.includes('#') ? browserResult.url.split('#')[1] : browserResult.url.split('?')[1];
-            if (urlPart) {
-              const params: Record<string, string> = {};
-              urlPart.split('&').forEach((part) => {
-                const [key, value] = part.split('=');
-                if (key && value) {
-                  params[key] = decodeURIComponent(value);
-                }
-              });
-
-              const { access_token, refresh_token } = params;
-              if (access_token) {
-                const { data: sessionData } = await supabase.auth.setSession({
-                  access_token,
-                  refresh_token: refresh_token || '',
-                });
-                if (sessionData?.session) {
-                  supabaseToken = sessionData.session.access_token;
-                }
+          if (urlPart) {
+            const params: Record<string, string> = {};
+            urlPart.split('&').forEach((part) => {
+              const [key, value] = part.split('=');
+              if (key && value) {
+                params[key] = decodeURIComponent(value);
               }
-            }
+            });
+
+            idToken = params['id_token'] || '';
           }
-        } catch (webOAuthErr) {
-          console.log('[GoogleLogin] Supabase OAuth failed/cancelled, using mock dev fallback:', webOAuthErr);
-        }
-
-        if (!supabaseToken) {
-          console.log('[GoogleLogin] Using mock dev fallback token...');
-          supabaseToken = 'mock_dev_google_id_token';
         }
       }
 
-      // 3. Send Token to backend
-      try {
-        const result = await googleMutation.mutateAsync({
-          data: {
-            idToken: supabaseToken,
-          },
-        });
-
-        console.log('[GoogleLogin] Got backend token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
-        await AsyncStorage.setItem('auth_token', result.token);
-      } catch (backendErr) {
-        console.log('[GoogleLogin] Backend verification fallback to local demo token:', backendErr);
-        await AsyncStorage.setItem('auth_token', 'local_demo_token_bypass');
+      if (!idToken) {
+        throw new Error('Google Sign-In was cancelled or no token was returned.');
       }
 
+      // 3. Send Google ID Token directly to our Express Backend (verified via google-auth-library)
+      const result = await googleMutation.mutateAsync({
+        data: { idToken },
+      });
+
+      console.log('[GoogleLogin] Direct Google authentication successful:', result.token ? result.token.substring(0, 15) + '…' : 'OK');
+      await AsyncStorage.setItem('auth_token', result.token);
       await queryClient.invalidateQueries();
-      router.replace('/(tabs)');
+
+      if (!result.user?.phone || !result.user?.city) {
+        router.replace('/complete-profile');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Google authentication failed';
-      console.log('[GoogleLogin] Final catch fallback:', message);
-      await AsyncStorage.setItem('auth_token', 'local_demo_token_bypass');
-      await queryClient.invalidateQueries();
-      router.replace('/(tabs)');
-    }
-  };
-
-  const [isDemoPending, setIsDemoPending] = useState(false);
-
-  const handleDemoLogin = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setError('');
-    setIsDemoPending(true);
-
-    try {
-      console.log('[DemoLogin] Attempting mock login via backend...');
-      try {
-        const result = await googleMutation.mutateAsync({
-          data: {
-            idToken: 'mock_dev_google_id_token',
-          },
-        });
-        console.log('[DemoLogin] Backend authentication successful:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
-        await AsyncStorage.setItem('auth_token', result.token);
-      } catch (backendErr) {
-        console.log('[DemoLogin] Backend/DB is offline, bypassing authentication locally:', backendErr);
-        // Fallback: save a local mock token so they can preview the UI offline
-        await AsyncStorage.setItem('auth_token', 'local_demo_token_bypass');
-      }
-
-      await queryClient.invalidateQueries();
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      setError('Demo Sign-In failed');
-    } finally {
-      setIsDemoPending(false);
+      console.log('[GoogleLogin] Authentication error:', message);
+      setError(message);
     }
   };
 
@@ -321,9 +269,9 @@ export default function LoginScreen() {
 
         {/* Google */}
         <Pressable
-          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: googleMutation.isPending ? 0.7 : 1, marginBottom: 12 }]}
+          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: googleMutation.isPending ? 0.7 : 1, marginBottom: 24 }]}
           onPress={handleGoogleLogin}
-          disabled={googleMutation.isPending || isDemoPending}
+          disabled={googleMutation.isPending}
         >
           {googleMutation.isPending ? (
             <ActivityIndicator color={colors.primary} />
@@ -331,22 +279,6 @@ export default function LoginScreen() {
             <>
               <Text style={styles.googleIcon}>G</Text>
               <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Demo Sign-In */}
-        <Pressable
-          style={[styles.demoBtn, { backgroundColor: colors.card, borderColor: colors.gold, borderWidth: 1.5, opacity: isDemoPending ? 0.7 : 1 }]}
-          onPress={handleDemoLogin}
-          disabled={googleMutation.isPending || isDemoPending}
-        >
-          {isDemoPending ? (
-            <ActivityIndicator color={colors.gold} />
-          ) : (
-            <>
-              <Feather name="shield" size={18} color={colors.gold} />
-              <Text style={[styles.demoBtnText, { color: colors.text }]}>Demo Sign-In (Skip Setup)</Text>
             </>
           )}
         </Pressable>
@@ -408,11 +340,6 @@ const styles = StyleSheet.create({
   },
   googleIcon: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#4285F4' },
   googleBtnText: { fontSize: 15, fontFamily: 'Inter_500Medium' },
-  demoBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderRadius: 14, paddingVertical: 15, borderWidth: 1.5, gap: 10, marginBottom: 24,
-  },
-  demoBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
   registerRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 12 },
   registerText: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   registerLink: { fontSize: 14, fontFamily: 'Inter_700Bold' },

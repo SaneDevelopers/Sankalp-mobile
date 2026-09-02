@@ -57,9 +57,13 @@
       "reactCompiler": true
     },
     "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
       "eas": {
-        "projectId": "e6625088-f23a-4fc2-b447-abc04da8eddc"
+        "projectId": "a808fa0f-2160-4a23-8390-625270ff8735"
       }
-    }
+    },
+    "owner": "anmolxoxo"
   }
 }

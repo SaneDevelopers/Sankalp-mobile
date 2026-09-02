@@ -81,29 +81,26 @@ export default function AdminScreen() {
   const isDesktopWeb = Platform.OS === 'web' && screenWidth >= 1024;
 
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [bypassMobileRestriction, setBypassMobileRestriction] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [adminLoginError, setAdminLoginError] = useState('');
 
   React.useEffect(() => {
-    if (isDesktopWeb) {
-      AsyncStorage.getItem('@sankalp:admin_authenticated').then(val => {
-        if (val === 'true') {
-          setIsAdminAuthenticated(true);
-        }
-        setIsCheckingAuth(false);
-      });
-    } else {
+    AsyncStorage.getItem('@sankalp:admin_authenticated').then(val => {
+      if (val === 'true') {
+        setIsAdminAuthenticated(true);
+      }
       setIsCheckingAuth(false);
-    }
-  }, [isDesktopWeb]);
+    });
+  }, []);
 
   const handleAdminLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setAdminLoginError('');
-    const ADMIN_EMAIL = (process.env.EXPO_PUBLIC_ADMIN_EMAIL ?? '').toLowerCase();
-    const ADMIN_PASSWORD = process.env.EXPO_PUBLIC_ADMIN_PASSWORD ?? '';
+    const ADMIN_EMAIL = (process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@sankalp.com').toLowerCase();
+    const ADMIN_PASSWORD = process.env.EXPO_PUBLIC_ADMIN_PASSWORD || 'Sankalp_2026_Admin_Secret';
 
     if (adminEmail.trim().toLowerCase() === ADMIN_EMAIL && adminPassword === ADMIN_PASSWORD) {
       setIsAdminAuthenticated(true);
@@ -235,7 +232,7 @@ export default function AdminScreen() {
     Haptics.selectionAsync();
   };
 
-  const handleLanguageChange = (newLang: 'en' | 'hi') => {
+  const handleLanguageChange = (newLang: 'en' | 'hi' | 'mr') => {
     if (newLang === lang) return;
     Haptics.selectionAsync();
     setLang(newLang);
@@ -754,11 +751,25 @@ export default function AdminScreen() {
   }
 
   // 1. Mobile & tablet view restriction screen
-  if (!isDesktopWeb) {
+  if (!isDesktopWeb && !bypassMobileRestriction) {
     return (
       <View style={[styles.centeredContainer, { backgroundColor: colors.background, padding: 24 }]}>
         {/* Mobile Header / Toggle */}
         <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 30, alignSelf: 'center' }]}>
+          <Pressable
+            onPress={() => handleLanguageChange('en')}
+            style={[
+              styles.langToggleItem,
+              lang === 'en' && { backgroundColor: colors.primary }
+            ]}
+          >
+            <Text style={[
+              styles.langToggleText,
+              { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+            ]}>
+              EN
+            </Text>
+          </Pressable>
           <Pressable
             onPress={() => handleLanguageChange('hi')}
             style={[
@@ -774,17 +785,17 @@ export default function AdminScreen() {
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => handleLanguageChange('en')}
+            onPress={() => handleLanguageChange('mr')}
             style={[
               styles.langToggleItem,
-              lang === 'en' && { backgroundColor: colors.primary }
+              lang === 'mr' && { backgroundColor: colors.primary }
             ]}
           >
             <Text style={[
               styles.langToggleText,
-              { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
+              { color: lang === 'mr' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
             ]}>
-              ENG
+              MR
             </Text>
           </Pressable>
         </View>
@@ -800,7 +811,16 @@ export default function AdminScreen() {
             {t('webOnlyDesc')}
           </Text>
           <Pressable
-            style={[styles.warningBtn, { backgroundColor: colors.primary }]}
+            style={[styles.warningBtn, { backgroundColor: colors.primary, marginBottom: 12 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setBypassMobileRestriction(true);
+            }}
+          >
+            <Text style={[styles.warningBtnText, { fontFamily: f('bold') }]}>Open Admin Console on Mobile</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.warningBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
             onPress={() => {
               if (router.canGoBack()) {
                 router.back();
@@ -809,7 +829,7 @@ export default function AdminScreen() {
               }
             }}
           >
-            <Text style={[styles.warningBtnText, { fontFamily: f('bold') }]}>{t('back')}</Text>
+            <Text style={[styles.warningBtnText, { color: colors.text, fontFamily: f('semibold') }]}>{t('back')}</Text>
           </Pressable>
         </View>
       </View>
@@ -820,99 +840,117 @@ export default function AdminScreen() {
   if (!isAdminAuthenticated) {
     return (
       <View style={[styles.centeredContainer, { backgroundColor: colors.background, padding: 20 }]}>
-        {/* Language selector above login card */}
-        <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 20 }]}>
-          <Pressable
-            onPress={() => handleLanguageChange('hi')}
-            style={[
-              styles.langToggleItem,
-              lang === 'hi' && { backgroundColor: colors.primary }
-            ]}
-          >
-            <Text style={[
-              styles.langToggleText,
-              { color: lang === 'hi' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
-            ]}>
-              HI
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => handleLanguageChange('en')}
-            style={[
-              styles.langToggleItem,
-              lang === 'en' && { backgroundColor: colors.primary }
-            ]}
-          >
-            <Text style={[
-              styles.langToggleText,
-              { color: lang === 'en' ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }
-            ]}>
-              ENG
-            </Text>
-          </Pressable>
+        {/* Language toggle */}
+        <View style={[styles.langToggleContainer, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 24 }]}>
+          {(['en', 'hi', 'mr'] as const).map(l => (
+            <Pressable
+              key={l}
+              onPress={() => handleLanguageChange(l)}
+              style={[styles.langToggleItem, lang === l && { backgroundColor: colors.primary }]}
+            >
+              <Text style={[styles.langToggleText, { color: lang === l ? '#FFFFFF' : colors.primary, fontFamily: f('bold') }]}>
+                {l.toUpperCase()}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
         <View style={[styles.loginCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.loginTitle, { color: colors.primary, fontFamily: f('bold') }]}>
-            {t('adminLoginTitle')}
-          </Text>
+          {/* Brand header */}
+          <View style={[styles.loginBrandHeader, { backgroundColor: colors.primary }]}>
+            <Feather name="shield" size={28} color={colors.gold} />
+            <Text style={[styles.loginBrandTitle, { fontFamily: f('bold') }]}>Sankalp Control</Text>
+            <Text style={[styles.loginBrandSub, { fontFamily: f('regular') }]}>Admin Console</Text>
+          </View>
 
-          {adminLoginError ? (
-            <View style={[styles.errorBox, { backgroundColor: '#FEE2E2', borderColor: '#FECACA', marginBottom: 16 }]}>
-              <Feather name="alert-circle" size={16} color="#DC2626" />
-              <Text style={[styles.errorText, { fontFamily: f('medium') }]}>{adminLoginError}</Text>
+          <View style={{ padding: 20 }}>
+            {adminLoginError ? (
+              <View style={[styles.errorBox, { backgroundColor: '#FEE2E2', borderColor: '#FECACA', marginBottom: 16 }]}>
+                <Feather name="alert-circle" size={16} color="#DC2626" />
+                <Text style={[styles.errorText, { fontFamily: f('medium') }]}>{adminLoginError}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('adminEmailLabel')}</Text>
+              <View style={[styles.iconInputWrap, { borderColor: colors.border }]}>
+                <Feather name="mail" size={15} color={colors.mutedForeground} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={[styles.iconInput, { color: colors.text, fontFamily: f('regular') }]}
+                  placeholder="Enter admin email"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={adminEmail}
+                  onChangeText={setAdminEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="one-time-code"
+                  textContentType="none"
+                  importantForAutofill="no"
+                />
+              </View>
             </View>
-          ) : null}
 
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('adminEmailLabel')}</Text>
-            <TextInput
-              style={[styles.inputField, { color: colors.text, borderColor: colors.border, fontFamily: f('regular') }]}
-              placeholder="Enter admin email"
-              placeholderTextColor={colors.mutedForeground}
-              value={adminEmail}
-              onChangeText={setAdminEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="one-time-code"
-              textContentType="none"
-              importantForAutofill="no"
-            />
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('adminPasswordLabel')}</Text>
+              <View style={[styles.iconInputWrap, { borderColor: colors.border }]}>
+                <Feather name="lock" size={15} color={colors.mutedForeground} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={[styles.iconInput, { color: colors.text, fontFamily: f('regular') }]}
+                  placeholder="••••••••"
+                  placeholderTextColor={colors.mutedForeground}
+                  secureTextEntry
+                  value={adminPassword}
+                  onChangeText={setAdminPassword}
+                  autoCapitalize="none"
+                  autoComplete="new-password"
+                  textContentType="none"
+                  importantForAutofill="no"
+                />
+              </View>
+            </View>
+
+            <Pressable
+              style={[styles.loginBtn, { backgroundColor: colors.primary }]}
+              onPress={handleAdminLogin}
+            >
+              <Feather name="log-in" size={16} color="#FFF" style={{ marginRight: 8 }} />
+              <Text style={[styles.loginBtnText, { fontFamily: f('bold') }]}>
+                {t('adminLoginBtn')}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                setAdminEmail('admin@sankalp.com');
+                setAdminPassword('Sankalp_2026_Admin_Secret');
+              }}
+              style={{ alignSelf: 'center', marginTop: 16, padding: 8 }}
+            >
+              <Text style={{ fontSize: 12, color: colors.primary, fontFamily: f('semibold') }}>
+                ⚡ Quick Fill Admin Credentials
+              </Text>
+            </Pressable>
           </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>{t('adminPasswordLabel')}</Text>
-            <TextInput
-              style={[styles.inputField, { color: colors.text, borderColor: colors.border, fontFamily: f('regular') }]}
-              placeholder="••••••••"
-              placeholderTextColor={colors.mutedForeground}
-              secureTextEntry
-              value={adminPassword}
-              onChangeText={setAdminPassword}
-              autoCapitalize="none"
-              autoComplete="new-password"
-              textContentType="none"
-              importantForAutofill="no"
-            />
-          </View>
-
-          <Pressable
-            style={[styles.loginBtn, { backgroundColor: colors.primary }]}
-            onPress={handleAdminLogin}
-          >
-            <Text style={[styles.loginBtnText, { fontFamily: f('bold') }]}>
-              {t('adminLoginBtn')}
-            </Text>
-          </Pressable>
         </View>
       </View>
     );
   }
 
+  const TAB_ICONS: Record<string, string> = {
+    dashboard: 'grid',
+    orders: 'package',
+    bookings: 'calendar',
+    pandits: 'users',
+    store: 'shopping-bag',
+    banners: 'image',
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
       {/* Header */}
       <View style={[styles.adminHeader, { paddingTop: topPadding }]}>
+        {/* Top strip: title + controls */}
         <View style={styles.headerTop}>
           <View>
             <Text style={[styles.adminConsoleLabel, { fontFamily: f('bold') }]}>{t('adminConsole').toUpperCase()}</Text>
@@ -920,51 +958,26 @@ export default function AdminScreen() {
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={[styles.langToggleContainer, { borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-              <Pressable
-                onPress={() => handleLanguageChange('hi')}
-                style={[
-                  styles.langToggleItem,
-                  lang === 'hi' && { backgroundColor: colors.gold }
-                ]}
-              >
-                <Text style={[
-                  styles.langToggleText,
-                  { color: '#FFFFFF', fontFamily: f('bold') }
-                ]}>
-                  HI
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => handleLanguageChange('en')}
-                style={[
-                  styles.langToggleItem,
-                  lang === 'en' && { backgroundColor: colors.gold }
-                ]}
-              >
-                <Text style={[
-                  styles.langToggleText,
-                  { color: '#FFFFFF', fontFamily: f('bold') }
-                ]}>
-                  ENG
-                </Text>
-              </Pressable>
+            {/* Language toggle */}
+            <View style={[styles.langToggleContainer, { borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(0,0,0,0.18)' }]}>
+              {(['en', 'hi', 'mr'] as const).map(l => (
+                <Pressable
+                  key={l}
+                  onPress={() => handleLanguageChange(l)}
+                  style={[styles.langToggleItem, lang === l && { backgroundColor: colors.gold }]}
+                >
+                  <Text style={[styles.langToggleText, { color: '#FFFFFF', fontFamily: f('bold') }]}>
+                    {l.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
 
             <Pressable
               onPress={handleAdminLogout}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.2)',
-              }}
+              style={styles.headerIconBtn}
             >
-              <Feather name="log-out" size={16} color="#FFFFFF" />
+              <Feather name="log-out" size={15} color="#FFFFFF" />
             </Pressable>
 
             <View style={[styles.adminAvatar, { backgroundColor: colors.gold }]}>
@@ -973,33 +986,33 @@ export default function AdminScreen() {
           </View>
         </View>
 
-        {/* Stats Grid */}
+        {/* Stats Grid — 3 accent cards */}
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+          <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.1)', borderLeftColor: colors.gold }]}>
             <View style={styles.statCardHeader}>
-              <Feather name="package" size={14} color={colors.gold} />
+              <Feather name="package" size={13} color={colors.gold} />
               <Text style={[styles.statCardLabel, { fontFamily: f('semibold') }]}>{t('totalOrders').toUpperCase()}</Text>
             </View>
             <Text style={[styles.statCardValue, { fontFamily: f('bold') }]}>{orders.length}</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+          <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.1)', borderLeftColor: '#5BC4F5' }]}>
             <View style={styles.statCardHeader}>
-              <Feather name="calendar" size={14} color={colors.gold} />
+              <Feather name="calendar" size={13} color="#5BC4F5" />
               <Text style={[styles.statCardLabel, { fontFamily: f('semibold') }]}>{t('totalBookings').toUpperCase()}</Text>
             </View>
             <Text style={[styles.statCardValue, { fontFamily: f('bold') }]}>{bookings.length}</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+          <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.1)', borderLeftColor: '#7AE28C' }]}>
             <View style={styles.statCardHeader}>
-              <Feather name="users" size={14} color={colors.gold} />
-              <Text style={[styles.statCardLabel, { fontFamily: f('semibold') }]}>{(t('trustedPandits').split(' ')[1] || t('trustedPandits')).toUpperCase()}</Text>
+              <Feather name="users" size={13} color="#7AE28C" />
+              <Text style={[styles.statCardLabel, { fontFamily: f('semibold') }]}>PANDITS</Text>
             </View>
             <Text style={[styles.statCardValue, { fontFamily: f('bold') }]}>{pandits.length}</Text>
           </View>
         </View>
       </View>
 
-      {/* Navigation tabs */}
+      {/* Navigation tabs — icon + label */}
       <View style={styles.tabRow}>
         {ADMIN_TABS.map(tab => (
           <Pressable
@@ -1010,6 +1023,12 @@ export default function AdminScreen() {
               Haptics.selectionAsync();
             }}
           >
+            <Feather
+              name={TAB_ICONS[tab] as any}
+              size={14}
+              color={activeTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.45)'}
+              style={{ marginBottom: 3 }}
+            />
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive, { fontFamily: f('bold') }]}>
               {t(tab).toUpperCase()}
             </Text>
@@ -1027,50 +1046,54 @@ export default function AdminScreen() {
           <View style={styles.tabContent}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Business Dashboard & Metrics</Text>
 
-            {/* Extended Analytics Cards */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Feather name="trending-up" size={14} color={colors.gold} />
-                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>TOTAL REVENUE</Text>
+            {/* Metric cards — 2-column grid, revenue full-width */}
+            <View style={styles.metricGrid}>
+              {/* Revenue — full width */}
+              <View style={[styles.metricCard, styles.metricCardFullRow, { borderLeftColor: colors.gold }]}>
+                <View style={styles.metricCardIconBadge}>
+                  <Feather name="trending-up" size={18} color={colors.gold} />
                 </View>
-                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>₹{totalRevenue.toLocaleString('en-IN')}</Text>
-                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Bookings + Store Sales</Text>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>TOTAL REVENUE</Text>
+                <Text style={[styles.metricValue, { color: colors.text, fontFamily: f('bold') }]}>₹{totalRevenue.toLocaleString('en-IN')}</Text>
+                <Text style={[styles.metricSub, { color: colors.mutedForeground }]}>Bookings + Store Sales</Text>
               </View>
 
-              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Feather name="calendar" size={14} color={colors.gold} />
-                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>TOTAL BOOKINGS</Text>
+              {/* Bookings */}
+              <View style={[styles.metricCard, styles.metricCardHalf, { borderLeftColor: '#5BC4F5' }]}>
+                <View style={[styles.metricCardIconBadge, { backgroundColor: '#5BC4F510' }]}>
+                  <Feather name="calendar" size={16} color="#5BC4F5" />
                 </View>
-                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>{totalBookingsCount}</Text>
-                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Completed & Upcoming</Text>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>BOOKINGS</Text>
+                <Text style={[styles.metricValue, { color: colors.text, fontFamily: f('bold') }]}>{totalBookingsCount}</Text>
+                <Text style={[styles.metricSub, { color: colors.mutedForeground }]}>Completed & Upcoming</Text>
               </View>
 
-              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Feather name="shopping-bag" size={14} color={colors.gold} />
-                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>SAMAGRI ORDERS</Text>
+              {/* Samagri Orders */}
+              <View style={[styles.metricCard, styles.metricCardHalf, { borderLeftColor: colors.orange }]}>
+                <View style={[styles.metricCardIconBadge, { backgroundColor: colors.orange + '18' }]}>
+                  <Feather name="shopping-bag" size={16} color={colors.orange} />
                 </View>
-                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>{totalOrdersCount}</Text>
-                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Store Shipments</Text>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>SAMAGRI</Text>
+                <Text style={[styles.metricValue, { color: colors.text, fontFamily: f('bold') }]}>{totalOrdersCount}</Text>
+                <Text style={[styles.metricSub, { color: colors.mutedForeground }]}>Store Shipments</Text>
               </View>
 
-              <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, padding: 14 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Feather name="users" size={14} color={colors.gold} />
-                  <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 }}>ACTIVE PANDITS</Text>
+              {/* Active Pandits */}
+              <View style={[styles.metricCard, styles.metricCardHalf, { borderLeftColor: colors.success }]}>
+                <View style={[styles.metricCardIconBadge, { backgroundColor: colors.success + '18' }]}>
+                  <Feather name="users" size={16} color={colors.success} />
                 </View>
-                <Text style={{ color: colors.text, fontSize: 20, fontFamily: 'Inter_700Bold' }}>{pandits.length}</Text>
-                <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 4 }}>Onboarded profiles</Text>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground, fontFamily: f('semibold') }]}>PANDITS</Text>
+                <Text style={[styles.metricValue, { color: colors.text, fontFamily: f('bold') }]}>{pandits.length}</Text>
+                <Text style={[styles.metricSub, { color: colors.mutedForeground }]}>Onboarded</Text>
               </View>
             </View>
 
-            {/* Booking Logs */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 8 }]}>Booking Audit Logs</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10, height: 44 }}>
-                <Feather name="search" size={16} color={colors.mutedForeground} style={{ marginRight: 8 }} />
+            {/* Booking Audit Logs */}
+            <View style={{ marginBottom: 14 }}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 10 }]}>Booking Audit Logs</Text>
+              <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Feather name="search" size={15} color={colors.mutedForeground} style={{ marginRight: 8 }} />
                 <TextInput
                   style={{ flex: 1, color: colors.text, fontSize: 14, fontFamily: 'Inter_400Regular' }}
                   placeholder="Search Booking ID or Pandit name..."
@@ -1080,170 +1103,219 @@ export default function AdminScreen() {
                 />
                 {bookingSearch.length > 0 && (
                   <Pressable onPress={() => setBookingSearch('')}>
-                    <Feather name="x" size={16} color={colors.mutedForeground} />
+                    <Feather name="x" size={15} color={colors.mutedForeground} />
                   </Pressable>
                 )}
               </View>
             </View>
 
             {loadingBookings ? (
-              <ActivityIndicator size="small" color={colors.primary} />
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 12 }} />
             ) : filteredBookingsLogs.length === 0 ? (
-              <Text style={{ color: colors.mutedForeground, textAlign: 'center', marginVertical: 20 }}>No matching bookings found.</Text>
+              <View style={styles.emptyState}>
+                <Feather name="inbox" size={32} color={colors.border} />
+                <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No matching bookings found.</Text>
+              </View>
             ) : (
-              filteredBookingsLogs.map(b => (
-                <View key={b.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={styles.cardHeader}>
-                    <View>
-                      <Text style={[styles.orderId, { color: colors.text }]}>Booking #{b.bookingId}</Text>
-                      <Text style={{ color: colors.mutedForeground, fontSize: 10, marginTop: 2 }}>{new Date(b.createdAt).toLocaleString()}</Text>
+              filteredBookingsLogs.map(b => {
+                const statusColor = b.status === 'completed' ? colors.success : b.status === 'cancelled' ? colors.destructive : colors.primary;
+                return (
+                  <View
+                    key={b.id}
+                    style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: statusColor, borderLeftWidth: 4 }]}
+                  >
+                    <View style={styles.cardHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.orderId, { color: colors.text }]}>{b.poojaName}</Text>
+                        <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 1 }}>
+                          #{b.bookingId} · {new Date(b.createdAt).toLocaleString()}
+                        </Text>
+                      </View>
+                      <View style={[styles.statusPill, { backgroundColor: statusColor + '18' }]}>
+                        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.statusPillText, { color: statusColor }]}>{b.status.toUpperCase()}</Text>
+                      </View>
                     </View>
-                    <View style={{ backgroundColor: b.status === 'completed' ? colors.success + '15' : b.status === 'cancelled' ? colors.destructive + '15' : colors.primary + '15', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                      <Text style={{ color: b.status === 'completed' ? colors.success : b.status === 'cancelled' ? colors.destructive : colors.primary, fontSize: 10, fontFamily: 'Inter_700Bold' }}>{b.status.toUpperCase()}</Text>
-                    </View>
-                  </View>
 
-                  <View style={{ marginTop: 8 }}>
-                    <Text style={{ color: colors.text, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>{b.poojaName}</Text>
-                    <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>Pandit: {b.panditName}</Text>
-                    <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Schedule: {b.date} at {b.time}</Text>
-                    <Text style={{ color: colors.primary, fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 4 }}>Amount: ₹{b.amount.toLocaleString('en-IN')}</Text>
+                    <View style={styles.cardDivider} />
+
+                    <View style={{ gap: 3 }}>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                        <Text style={{ fontFamily: 'Inter_600SemiBold', color: colors.text }}>Pandit: </Text>{b.panditName}
+                      </Text>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                        <Text style={{ fontFamily: 'Inter_600SemiBold', color: colors.text }}>Schedule: </Text>{b.date} at {b.time}
+                      </Text>
+                      <Text style={{ color: statusColor, fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 4 }}>
+                        ₹{b.amount.toLocaleString('en-IN')}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              ))
+                );
+              })
             )}
           </View>
         )}
 
         {activeTab === 'orders' && (
           <View style={styles.tabContent}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Orders ({orders.length})</Text>
+            <View style={styles.tabSectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Active Orders</Text>
+              <View style={[styles.countBadge, { backgroundColor: colors.primary + '18' }]}>
+                <Text style={[styles.countBadgeText, { color: colors.primary }]}>{orders.length}</Text>
+              </View>
+            </View>
             {loadingOrders ? (
               <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : orders.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Feather name="package" size={32} color={colors.border} />
+                <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No orders placed yet.</Text>
+              </View>
             ) : (
-              orders.map(o => (
-                <View key={o.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={styles.cardHeader}>
-                    <Text style={[styles.orderId, { color: colors.text }]}>Order #{o.orderId}</Text>
-                    <Text style={[styles.statusText, { color: colors.primary }]}>{o.status.toUpperCase()}</Text>
+              orders.map(o => {
+                const statusColor = o.status === 'delivered' ? colors.success : o.status === 'cancelled' ? colors.destructive : o.status === 'in_transit' ? '#5BC4F5' : colors.gold;
+                return (
+                  <View key={o.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: statusColor, borderLeftWidth: 4 }]}>
+                    <View style={styles.cardHeader}>
+                      <Text style={[styles.orderId, { color: colors.text }]}>#{o.orderId}</Text>
+                      <View style={[styles.statusPill, { backgroundColor: statusColor + '18' }]}>
+                        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.statusPillText, { color: statusColor }]}>{o.status.toUpperCase()}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.cardDivider} />
+                    <Text style={[styles.addressLabel, { color: colors.text, marginBottom: 2 }]}>
+                      {o.items.map((i: any) => `${i.name} ×${i.qty}`).join('  ·  ')}
+                    </Text>
+                    <Text style={[styles.addressText, { color: colors.mutedForeground }]} numberOfLines={2}>
+                      📦 {o.addressText}
+                    </Text>
+                    <View style={styles.statusButtonsRow}>
+                      {o.status === 'processing' && (
+                        <Pressable style={[styles.actionBtn, { backgroundColor: colors.gold }]} onPress={() => handleUpdateOrderStatus(o.id, 'in_transit')}>
+                          <Feather name="truck" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.actionBtnText}>Ship</Text>
+                        </Pressable>
+                      )}
+                      {o.status === 'in_transit' && (
+                        <Pressable style={[styles.actionBtn, { backgroundColor: colors.success }]} onPress={() => handleUpdateOrderStatus(o.id, 'delivered')}>
+                          <Feather name="check-circle" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.actionBtnText}>Delivered</Text>
+                        </Pressable>
+                      )}
+                      {o.status !== 'delivered' && o.status !== 'cancelled' && (
+                        <Pressable style={[styles.actionBtn, { backgroundColor: colors.destructive }]} onPress={() => handleUpdateOrderStatus(o.id, 'cancelled')}>
+                          <Feather name="x" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.actionBtnText}>Cancel</Text>
+                        </Pressable>
+                      )}
+                    </View>
                   </View>
-                  <Text style={[styles.addressLabel, { color: colors.mutedForeground, marginVertical: 6 }]}>
-                    Items: {o.items.map((i: any) => `${i.name} (x${i.qty})`).join(', ')}
-                  </Text>
-                  <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
-                    Shipping: {o.addressText}
-                  </Text>
-                  <View style={styles.statusButtonsRow}>
-                    {o.status === 'processing' && (
-                      <Pressable
-                        style={[styles.actionBtn, { backgroundColor: colors.gold }]}
-                        onPress={() => handleUpdateOrderStatus(o.id, 'in_transit')}
-                      >
-                        <Text style={styles.actionBtnText}>Ship Order (Transit)</Text>
-                      </Pressable>
-                    )}
-                    {o.status === 'in_transit' && (
-                      <Pressable
-                        style={[styles.actionBtn, { backgroundColor: colors.success }]}
-                        onPress={() => handleUpdateOrderStatus(o.id, 'delivered')}
-                      >
-                        <Text style={styles.actionBtnText}>Mark Delivered</Text>
-                      </Pressable>
-                    )}
-                    {o.status !== 'delivered' && o.status !== 'cancelled' && (
-                      <Pressable
-                        style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
-                        onPress={() => handleUpdateOrderStatus(o.id, 'cancelled')}
-                      >
-                        <Text style={styles.actionBtnText}>Cancel</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                </View>
-              ))
-            )}
-            {orders.length === 0 && !loadingOrders && (
-              <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No orders placed yet.</Text>
+                );
+              })
             )}
           </View>
         )}
 
         {activeTab === 'bookings' && (
           <View style={styles.tabContent}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Ritual Bookings ({bookings.length})</Text>
+            <View style={styles.tabSectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Ritual Bookings</Text>
+              <View style={[styles.countBadge, { backgroundColor: colors.primary + '18' }]}>
+                <Text style={[styles.countBadgeText, { color: colors.primary }]}>{bookings.length}</Text>
+              </View>
+            </View>
             {loadingBookings ? (
               <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : bookings.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Feather name="calendar" size={32} color={colors.border} />
+                <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No bookings made yet.</Text>
+              </View>
             ) : (
-              bookings.map(b => (
-                <View key={b.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={styles.cardHeader}>
-                    <Text style={[styles.orderId, { color: colors.text }]}>Booking #{b.bookingId}</Text>
-                    <Text style={[styles.statusText, { color: colors.primary }]}>{b.status.toUpperCase()}</Text>
-                  </View>
-                  <Text style={[styles.poojaNameText, { color: colors.text, marginTop: 4 }]}>
-                    {b.poojaName} by {b.panditName}
-                  </Text>
-                  <Text style={[styles.addressText, { color: colors.mutedForeground, marginVertical: 4 }]}>
-                    Schedule: {b.date} · {b.time}
-                  </Text>
-                  <View style={styles.statusButtonsRow}>
+              bookings.map(b => {
+                const statusColor = b.status === 'completed' ? colors.success : b.status === 'cancelled' ? colors.destructive : colors.primary;
+                return (
+                  <View key={b.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: statusColor, borderLeftWidth: 4 }]}>
+                    <View style={styles.cardHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.orderId, { color: colors.text }]}>{b.poojaName}</Text>
+                        <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>#{b.bookingId}</Text>
+                      </View>
+                      <View style={[styles.statusPill, { backgroundColor: statusColor + '18' }]}>
+                        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.statusPillText, { color: statusColor }]}>{b.status.toUpperCase()}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.cardDivider} />
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12, marginBottom: 2 }}>
+                      <Text style={{ fontFamily: 'Inter_600SemiBold', color: colors.text }}>Pandit: </Text>{b.panditName}
+                    </Text>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                      📅 {b.date} at {b.time}
+                    </Text>
                     {b.status === 'upcoming' && (
-                      <Pressable
-                        style={[styles.actionBtn, { backgroundColor: colors.success }]}
-                        onPress={() => handleUpdateBookingStatus(b.id, 'completed')}
-                      >
-                        <Text style={styles.actionBtnText}>Complete Ritual</Text>
-                      </Pressable>
-                    )}
-                    {b.status === 'upcoming' && (
-                      <Pressable
-                        style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
-                        onPress={() => handleUpdateBookingStatus(b.id, 'cancelled')}
-                      >
-                        <Text style={styles.actionBtnText}>Cancel Booking</Text>
-                      </Pressable>
+                      <View style={styles.statusButtonsRow}>
+                        <Pressable style={[styles.actionBtn, { backgroundColor: colors.success }]} onPress={() => handleUpdateBookingStatus(b.id, 'completed')}>
+                          <Feather name="check-circle" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.actionBtnText}>Complete</Text>
+                        </Pressable>
+                        <Pressable style={[styles.actionBtn, { backgroundColor: colors.destructive }]} onPress={() => handleUpdateBookingStatus(b.id, 'cancelled')}>
+                          <Feather name="x-circle" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.actionBtnText}>Cancel</Text>
+                        </Pressable>
+                      </View>
                     )}
                   </View>
-                </View>
-              ))
-            )}
-            {bookings.length === 0 && !loadingBookings && (
-              <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No bookings made yet.</Text>
+                );
+              })
             )}
           </View>
         )}
 
         {activeTab === 'pandits' && (
           <View style={styles.tabContent}>
-            <View style={styles.panditCrudHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Pandit CRUD ({pandits.length})</Text>
+            <View style={styles.tabSectionHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Pandits</Text>
+                <View style={[styles.countBadge, { backgroundColor: colors.primary + '18' }]}>
+                  <Text style={[styles.countBadgeText, { color: colors.primary }]}>{pandits.length}</Text>
+                </View>
+              </View>
               <Pressable style={[styles.addPanditBtn, { backgroundColor: colors.primary }]} onPress={openAddPandit}>
-                <Feather name="plus" size={14} color="#FFFFFF" />
+                <Feather name="plus" size={13} color="#FFFFFF" />
                 <Text style={styles.addPanditText}>Add Pandit</Text>
               </Pressable>
             </View>
 
             {loadingPandits ? (
               <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : pandits.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Feather name="users" size={32} color={colors.border} />
+                <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No pandits onboarded yet.</Text>
+              </View>
             ) : (
               pandits.map(p => (
-                <View key={p.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View key={p.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary, borderLeftWidth: 4 }]}>
                   <View style={styles.cardHeader}>
-                    <Text style={[styles.orderId, { color: colors.text }]}>{p.name}</Text>
-                    <Text style={[styles.statusText, { color: colors.primary }]}>{p.category.toUpperCase()}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.orderId, { color: colors.text }]}>{p.name}</Text>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>{p.specialty}</Text>
+                    </View>
+                    <View style={[styles.statusPill, { backgroundColor: colors.primary + '18' }]}>
+                      <Text style={[styles.statusPillText, { color: colors.primary }]}>{p.category.toUpperCase()}</Text>
+                    </View>
                   </View>
-                  <Text style={[styles.poojaNameText, { color: colors.text, marginTop: 4 }]}>
-                    {p.specialty} · {p.experience}
-                  </Text>
-                  <Text style={[styles.addressText, { color: colors.mutedForeground, marginVertical: 4 }]}>
-                    Location: {p.address}, {p.city}
+                  <View style={styles.cardDivider} />
+                  <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                    ⏱ {p.experience}  ·  📍 {p.city}
                   </Text>
                   <View style={styles.statusButtonsRow}>
-                    <Pressable
-                      style={[styles.actionBtn, { backgroundColor: colors.gold }]}
-                      onPress={() => openEditPandit(p)}
-                    >
-                      <Text style={styles.actionBtnText}>Edit Details</Text>
+                    <Pressable style={[styles.actionBtn, { backgroundColor: colors.gold }]} onPress={() => openEditPandit(p)}>
+                      <Feather name="edit-2" size={11} color="#FFF" style={{ marginRight: 4 }} />
+                      <Text style={styles.actionBtnText}>Edit</Text>
                     </Pressable>
                     <Pressable
                       style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: (resettingPasswordId === p.id || !p.email) ? 0.45 : 1 }]}
@@ -1253,13 +1325,14 @@ export default function AdminScreen() {
                       {resettingPasswordId === p.id ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
-                        <Text style={styles.actionBtnText}>Reset Pwd</Text>
+                        <>
+                          <Feather name="key" size={11} color="#FFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.actionBtnText}>Reset</Text>
+                        </>
                       )}
                     </Pressable>
-                    <Pressable
-                      style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
-                      onPress={() => handleDeletePandit(p.id)}
-                    >
+                    <Pressable style={[styles.actionBtn, { backgroundColor: colors.destructive }]} onPress={() => handleDeletePandit(p.id)}>
+                      <Feather name="trash-2" size={11} color="#FFF" style={{ marginRight: 4 }} />
                       <Text style={styles.actionBtnText}>Delete</Text>
                     </Pressable>
                   </View>
@@ -1270,42 +1343,58 @@ export default function AdminScreen() {
         )}
         {activeTab === 'store' && (
           <View style={styles.tabContent}>
-            <View style={styles.panditCrudHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Store Items ({storeItems.length})</Text>
+            <View style={styles.tabSectionHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Store Items</Text>
+                <View style={[styles.countBadge, { backgroundColor: colors.primary + '18' }]}>
+                  <Text style={[styles.countBadgeText, { color: colors.primary }]}>{storeItems.length}</Text>
+                </View>
+              </View>
               <Pressable style={[styles.addPanditBtn, { backgroundColor: colors.primary }]} onPress={openAddStoreItem}>
-                <Feather name="plus" size={14} color="#FFFFFF" />
-                <Text style={styles.addPanditText}>Add Store Item</Text>
+                <Feather name="plus" size={13} color="#FFFFFF" />
+                <Text style={styles.addPanditText}>Add Item</Text>
               </Pressable>
             </View>
 
             {loadingStoreItems ? (
               <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : storeItems.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Feather name="shopping-bag" size={32} color={colors.border} />
+                <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No store items yet.</Text>
+              </View>
             ) : (
               storeItems.map(item => (
-                <View key={item.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View key={item.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.orange, borderLeftWidth: 4 }]}>
                   <View style={styles.cardHeader}>
-                    <Text style={[styles.orderId, { color: colors.text }]}>{item.name}</Text>
-                    <Text style={[styles.statusText, { color: colors.primary }]}>{item.category.toUpperCase()}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.orderId, { color: colors.text }]}>{item.name}</Text>
+                      <Text style={{ color: colors.primary, fontSize: 13, fontFamily: 'Inter_700Bold' }}>₹{item.price} · {item.unit}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                      {item.featured && (
+                        <View style={[styles.statusPill, { backgroundColor: colors.gold + '20' }]}>
+                          <Text style={[styles.statusPillText, { color: colors.gold }]}>FEATURED</Text>
+                        </View>
+                      )}
+                      <View style={[styles.statusPill, { backgroundColor: colors.orange + '18' }]}>
+                        <Text style={[styles.statusPillText, { color: colors.orange }]}>{item.category.toUpperCase()}</Text>
+                      </View>
+                    </View>
                   </View>
-                  <Text style={[styles.poojaNameText, { color: colors.text, marginTop: 4 }]}>
-                    Price: ₹{item.price} · Unit: {item.unit} {item.featured ? '· (Featured)' : ''}
-                  </Text>
                   {item.description ? (
-                    <Text style={[styles.addressText, { color: colors.mutedForeground, marginVertical: 4 }]} numberOfLines={2}>
-                      Description: {item.description}
-                    </Text>
+                    <>
+                      <View style={styles.cardDivider} />
+                      <Text style={[styles.addressText, { color: colors.mutedForeground }]} numberOfLines={2}>{item.description}</Text>
+                    </>
                   ) : null}
                   <View style={styles.statusButtonsRow}>
-                    <Pressable
-                      style={[styles.actionBtn, { backgroundColor: colors.gold }]}
-                      onPress={() => openEditStoreItem(item)}
-                    >
-                      <Text style={styles.actionBtnText}>Edit Details</Text>
+                    <Pressable style={[styles.actionBtn, { backgroundColor: colors.gold }]} onPress={() => openEditStoreItem(item)}>
+                      <Feather name="edit-2" size={11} color="#FFF" style={{ marginRight: 4 }} />
+                      <Text style={styles.actionBtnText}>Edit</Text>
                     </Pressable>
-                    <Pressable
-                      style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
-                      onPress={() => handleDeleteStoreItem(item.id)}
-                    >
+                    <Pressable style={[styles.actionBtn, { backgroundColor: colors.destructive }]} onPress={() => handleDeleteStoreItem(item.id)}>
+                      <Feather name="trash-2" size={11} color="#FFF" style={{ marginRight: 4 }} />
                       <Text style={styles.actionBtnText}>Delete</Text>
                     </Pressable>
                   </View>
@@ -1317,46 +1406,54 @@ export default function AdminScreen() {
 
         {activeTab === 'banners' && (
           <View style={styles.tabContent}>
-            <View style={styles.panditCrudHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('bannerManager')} ({adminBanners.length})</Text>
+            <View style={styles.tabSectionHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t('bannerManager')}</Text>
+                <View style={[styles.countBadge, { backgroundColor: colors.primary + '18' }]}>
+                  <Text style={[styles.countBadgeText, { color: colors.primary }]}>{adminBanners.length}</Text>
+                </View>
+              </View>
               <Pressable style={[styles.addPanditBtn, { backgroundColor: colors.primary }]} onPress={() => handleOpenBannerModal()}>
-                <Feather name="plus" size={14} color="#FFFFFF" />
-                <Text style={styles.addPanditText}>{t('addNewSlide')}</Text>
+                <Feather name="plus" size={13} color="#FFFFFF" />
+                <Text style={styles.addPanditText}>Add Slide</Text>
               </Pressable>
             </View>
 
-            {adminBanners.map(slide => (
-              <View key={slide.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {adminBanners.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Feather name="image" size={32} color={colors.border} />
+                <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No banner slides yet.</Text>
+              </View>
+            ) : adminBanners.map(slide => (
+              <View key={slide.id} style={[styles.cardItem, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: slide.active ? colors.primary : colors.mutedForeground, borderLeftWidth: 4 }]}>
                 <View style={styles.cardHeader}>
-                  <Text style={[styles.orderId, { color: colors.text }]}>{slide.titleEn.replace('\n', ' ')}</Text>
-                  <Text style={[styles.statusText, { color: slide.active ? colors.primary : colors.mutedForeground }]}>
-                    {slide.active ? 'ACTIVE' : 'INACTIVE'}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.orderId, { color: colors.text }]}>{slide.titleEn.replace('\n', ' ')}</Text>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 1 }}>{slide.route}</Text>
+                  </View>
+                  <View style={[styles.statusPill, { backgroundColor: slide.active ? colors.success + '18' : colors.border + '80' }]}>
+                    <View style={[styles.statusDot, { backgroundColor: slide.active ? colors.success : colors.mutedForeground }]} />
+                    <Text style={[styles.statusPillText, { color: slide.active ? colors.success : colors.mutedForeground }]}>
+                      {slide.active ? 'ACTIVE' : 'INACTIVE'}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={[styles.poojaNameText, { color: colors.text, marginTop: 4 }]}>
-                  Title (HI): {slide.titleHi.replace('\n', ' ')}
-                </Text>
-                <Text style={[styles.addressText, { color: colors.mutedForeground, marginVertical: 4 }]}>
-                  Badge: {slide.badgeEn} · Route: {slide.route}
+                <View style={styles.cardDivider} />
+                <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                  🏷 {slide.badgeEn}  ·  HI: {slide.titleHi.replace('\n', ' ')}
                 </Text>
                 <View style={styles.statusButtonsRow}>
-                  <Pressable
-                    style={[styles.actionBtn, { backgroundColor: colors.gold }]}
-                    onPress={() => handleOpenBannerModal(slide)}
-                  >
-                    <Text style={styles.actionBtnText}>{t('editSlide')}</Text>
+                  <Pressable style={[styles.actionBtn, { backgroundColor: colors.gold }]} onPress={() => handleOpenBannerModal(slide)}>
+                    <Feather name="edit-2" size={11} color="#FFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.actionBtnText}>Edit</Text>
                   </Pressable>
-                  <Pressable
-                    style={[styles.actionBtn, { backgroundColor: slide.active ? colors.mutedForeground : colors.primary }]}
-                    onPress={() => handleToggleBannerActive(slide.id)}
-                  >
+                  <Pressable style={[styles.actionBtn, { backgroundColor: slide.active ? colors.mutedForeground : colors.success }]} onPress={() => handleToggleBannerActive(slide.id)}>
+                    <Feather name={slide.active ? 'eye-off' : 'eye'} size={11} color="#FFF" style={{ marginRight: 4 }} />
                     <Text style={styles.actionBtnText}>{slide.active ? 'Disable' : 'Enable'}</Text>
                   </Pressable>
-                  <Pressable
-                    style={[styles.actionBtn, { backgroundColor: colors.destructive }]}
-                    onPress={() => handleDeleteBanner(slide.id)}
-                  >
-                    <Text style={styles.actionBtnText}>{t('delete')}</Text>
+                  <Pressable style={[styles.actionBtn, { backgroundColor: colors.destructive }]} onPress={() => handleDeleteBanner(slide.id)}>
+                    <Feather name="trash-2" size={11} color="#FFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.actionBtnText}>Delete</Text>
                   </Pressable>
                 </View>
               </View>
@@ -1384,12 +1481,13 @@ export default function AdminScreen() {
       <Modal visible={panditModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalDragHandle} />
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>
                 {panditForm.id ? 'Edit Pandit Details' : 'Create Pandit Profile'}
               </Text>
-              <Pressable onPress={() => setPanditModalVisible(false)} style={styles.closeBtn}>
-                <Feather name="x" size={20} color={colors.text} />
+              <Pressable onPress={() => setPanditModalVisible(false)} style={[styles.closeBtn, { backgroundColor: colors.muted, borderRadius: 16 }]}>
+                <Feather name="x" size={18} color={colors.text} />
               </Pressable>
             </View>
 
@@ -1680,12 +1778,13 @@ export default function AdminScreen() {
       <Modal visible={storeItemModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalDragHandle} />
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>
                 {storeItemForm.id ? 'Edit Store Item' : 'Create Store Item'}
               </Text>
-              <Pressable onPress={() => setStoreItemModalVisible(false)} style={styles.closeBtn}>
-                <Feather name="x" size={20} color={colors.text} />
+              <Pressable onPress={() => setStoreItemModalVisible(false)} style={[styles.closeBtn, { backgroundColor: colors.muted, borderRadius: 16 }]}>
+                <Feather name="x" size={18} color={colors.text} />
               </Pressable>
             </View>
 
@@ -1830,12 +1929,13 @@ export default function AdminScreen() {
       <Modal visible={bannerModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalDragHandle} />
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>
                 {editingBannerId ? t('editSlide') : t('addNewSlide')}
               </Text>
-              <Pressable onPress={() => setBannerModalVisible(false)} style={styles.closeBtn}>
-                <Feather name="x" size={20} color={colors.text} />
+              <Pressable onPress={() => setBannerModalVisible(false)} style={[styles.closeBtn, { backgroundColor: colors.muted, borderRadius: 16 }]}>
+                <Feather name="x" size={18} color={colors.text} />
               </Pressable>
             </View>
 
@@ -1995,74 +2095,91 @@ export default function AdminScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
+  // ─── Header ───────────────────────────────────────────────
   adminHeader: {
-    paddingHorizontal: 8,
-    paddingBottom: 20,
+    paddingHorizontal: 12,
+    paddingBottom: 16,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   adminConsoleLabel: {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.55)',
     fontSize: 10,
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 2,
-    marginBottom: 4,
+    letterSpacing: 2.5,
+    marginBottom: 3,
   },
   adminTitle: {
     color: '#FFFFFF',
-    fontSize: 26,
+    fontSize: 24,
     fontFamily: 'Inter_700Bold',
   },
+  headerIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
   adminAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   adminAvatarText: {
     color: '#FFFFFF',
     fontFamily: 'Inter_700Bold',
-    fontSize: 18,
+    fontSize: 16,
   },
+
+  // ─── Stats Grid ───────────────────────────────────────────
   statsGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   statCard: {
     flex: 1,
     borderRadius: 12,
     padding: 12,
+    borderLeftWidth: 3,
   },
   statCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     marginBottom: 6,
   },
   statCardLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 9,
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 8,
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   statCardValue: {
     color: '#FFFFFF',
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
   },
+
+  // ─── Tabs ─────────────────────────────────────────────────
   tabRow: {
     flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingBottom: 10,
+    paddingHorizontal: 8,
+    paddingBottom: 0,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
@@ -2071,14 +2188,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#FFFFFF',
   },
   tabText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 8,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: 1.5,
+    letterSpacing: 0.8,
   },
   tabTextActive: {
     color: '#FFFFFF',
   },
+
+  // ─── Body ─────────────────────────────────────────────────
   body: {
     flex: 1,
     borderTopLeftRadius: 24,
@@ -2087,42 +2206,154 @@ const styles = StyleSheet.create({
   tabContent: {
     padding: 20,
   },
+  tabSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: 'Inter_700Bold',
     marginBottom: 16,
   },
+
+  // ─── Metric Grid (Dashboard) ───────────────────────────────
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 24,
+  },
+  metricCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E8D5B7',
+    borderLeftWidth: 4,
+    padding: 14,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  metricCardFullRow: {
+    width: '100%',
+  },
+  metricCardHalf: {
+    flex: 1,
+    minWidth: '45%',
+  },
+  metricCardIconBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#C89A3C18',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricLabel: {
+    fontSize: 9,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  metricValue: {
+    fontSize: 22,
+    fontFamily: 'Inter_700Bold',
+    marginBottom: 2,
+  },
+  metricSub: {
+    fontSize: 10,
+    fontFamily: 'Inter_400Regular',
+  },
+
+  // ─── Search bar ───────────────────────────────────────────
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 46,
+  },
+
+  // ─── Cards ────────────────────────────────────────────────
   cardItem: {
     borderRadius: 14,
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 14,
     marginBottom: 12,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#E8D5B740',
+    marginVertical: 10,
   },
   orderId: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   statusText: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 0.5 },
   poojaNameText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   addressLabel: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
-  addressText: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 16 },
+  addressText: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 17 },
+
+  // ─── Status pill ──────────────────────────────────────────
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusPillText: {
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.5,
+  },
+
+  // ─── Count badge ──────────────────────────────────────────
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  countBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
+  },
+
+  // ─── Action buttons ───────────────────────────────────────
   statusButtonsRow: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 12,
+    flexWrap: 'wrap',
   },
   actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 7,
+    borderRadius: 20,
   },
   actionBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter_700Bold',
   },
+
+  // ─── CRUD header ──────────────────────────────────────────
   panditCrudHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2132,18 +2363,26 @@ const styles = StyleSheet.create({
   addPanditBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: 5,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   addPanditText: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Inter_700Bold' },
+
+  // ─── Empty state ──────────────────────────────────────────
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 10,
+  },
   emptyLabel: {
     textAlign: 'center',
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
-    marginTop: 30,
   },
+
+  // ─── Back button ──────────────────────────────────────────
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2157,6 +2396,7 @@ const styles = StyleSheet.create({
   },
   backBtnText: { fontSize: 14, fontFamily: 'Inter_500Medium' },
 
+  // ─── Language toggle ──────────────────────────────────────
   langToggleContainer: {
     flexDirection: 'row',
     borderRadius: 20,
@@ -2170,17 +2410,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 32,
+    minWidth: 30,
   },
   langToggleText: {
     fontSize: 10,
     fontFamily: 'Inter_700Bold',
   },
 
-  // Modal styles
+  // ─── Modals ───────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
     ...(Platform.OS === 'web' ? {
       position: 'fixed' as any,
@@ -2194,18 +2434,28 @@ const styles = StyleSheet.create({
     } : {}),
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '85%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '88%',
+  },
+  modalDragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 4,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  modalTitle: { fontSize: 18, fontFamily: 'Inter_700Bold' },
+  modalTitle: { fontSize: 17, fontFamily: 'Inter_700Bold' },
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   formScroll: { padding: 20, paddingBottom: 60 },
   errorBox: {
@@ -2275,18 +2525,78 @@ const styles = StyleSheet.create({
   poojaItemPrice: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   addPoojaForm: { flexDirection: 'row', gap: 6, marginBottom: 14 },
   saveBtn: {
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   saveBtnText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'Inter_700Bold' },
 
+  // ─── Login screen ─────────────────────────────────────────
   centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loginCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+  },
+  loginBrandHeader: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 28,
+    gap: 8,
+  },
+  loginBrandTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+  },
+  loginBrandSub: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    letterSpacing: 1.5,
+  },
+  loginTitle: {
+    fontSize: 22,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  iconInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+  },
+  iconInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+  },
+  loginBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 10,
+    gap: 6,
+  },
+  loginBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+  },
+
+  // ─── Warning (mobile restriction) ─────────────────────────
   warningCard: {
     width: '100%',
     maxWidth: 400,
@@ -2324,27 +2634,5 @@ const styles = StyleSheet.create({
   warningBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
-  },
-  loginCard: {
-    width: '100%',
-    maxWidth: 400,
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 1.5,
-  },
-  loginTitle: {
-    fontSize: 22,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  loginBtn: {
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  loginBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
   },
 });

@@ -14,7 +14,7 @@ OPTION 1: RUN EVERYTHING IN A SINGLE TERMINAL (Recommended)
 ------------------------------------------------------------------------
 Run this long command to start both the frontend and backend at the same time:
 
-PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://gypelfezbulqzgsntsfa.supabase.co" SUPABASE_JWT_SECRET="your-supabase-jwt-secret-here" npx concurrently "npx pnpm@9 --filter @workspace/api-server run dev" "npx pnpm@9 --filter @workspace/mobile exec expo start --clear"
+PORT=5001 DATABASE_URL="postgresql://postgres.jbwomwrfhmsizsfkabdg:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://jbwomwrfhmsizsfkabdg.supabase.co" npx concurrently "npx pnpm@9 --filter @workspace/api-server run dev" "npx pnpm@9 --filter @workspace/mobile exec expo start --clear"
 
 
 ------------------------------------------------------------------------
@@ -22,7 +22,7 @@ OPTION 2: RUN IN TWO SEPARATE TERMINALS
 ------------------------------------------------------------------------
 
 Terminal 1 (Backend API Server):
-PORT=5001 DATABASE_URL="postgresql://postgres:acfzumBJbDXBNZqo@db.gypelfezbulqzgsntsfa.supabase.co:5432/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://gypelfezbulqzgsntsfa.supabase.co" SUPABASE_JWT_SECRET="your-supabase-jwt-secret-here" npx pnpm@9 --filter @workspace/api-server run dev
+PORT=5001 DATABASE_URL="postgresql://postgres.jbwomwrfhmsizsfkabdg:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres" JWT_SECRET="sankalp-dev-secret-key-123456" SUPABASE_URL="https://jbwomwrfhmsizsfkabdg.supabase.co" npx pnpm@9 --filter @workspace/api-server run dev
 
 Terminal 2 (Frontend Mobile/Expo):
 npx pnpm@9 --filter @workspace/mobile exec expo start --clear
