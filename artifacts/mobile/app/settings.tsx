@@ -181,16 +181,6 @@ export default function SettingsScreen() {
           <LinkRow label="About Sankalp" icon="info" onPress={() => {}} />
         </View>
 
-        {/* Administration */}
-        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ADMINISTRATION</Text>
-        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <LinkRow
-            label="Admin Console"
-            icon="shield"
-            color={colors.primary}
-            onPress={() => router.push('/admin' as any)}
-          />
-        </View>
 
         {/* Version */}
         <View style={[styles.versionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

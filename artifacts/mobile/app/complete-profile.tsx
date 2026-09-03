@@ -415,6 +415,19 @@ export default function CompleteProfileScreen() {
             </>
           )}
         </Pressable>
+
+        {/* Skip for now */}
+        <Pressable
+          style={{ alignItems: 'center', marginTop: 14, paddingVertical: 8 }}
+          onPress={async () => {
+            await AsyncStorage.setItem('profile_completed', 'true');
+            router.replace('/(tabs)');
+          }}
+        >
+          <Text style={{ fontSize: 14, fontFamily: 'Inter_500Medium', color: colors.mutedForeground }}>
+            Skip for now & explore app
+          </Text>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );

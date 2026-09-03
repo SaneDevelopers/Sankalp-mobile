@@ -1,0 +1,6 @@
+# Root EAS ignore
+node_modules
+.git
+.expo
+cf-worker
+artifacts/api-server

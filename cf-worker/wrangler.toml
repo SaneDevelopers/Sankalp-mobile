@@ -1,0 +1,15 @@
+name = "sankalp-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+# Secrets are set via: wrangler secret put SECRET_NAME
+# Required secrets:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   JWT_SECRET
+#   GOOGLE_CLIENT_ID_WEB
+#   SUPABASE_ANON_KEY

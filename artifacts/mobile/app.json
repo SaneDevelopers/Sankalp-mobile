@@ -27,7 +27,8 @@
         "foregroundImage": "./assets/images/sankalp_logo.png",
         "backgroundColor": "#FAF3E8"
       },
-      "package": "com.sankalp.mobile"
+      "package": "com.sankalp",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/images/sankalp_logo.png"

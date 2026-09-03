@@ -40,7 +40,6 @@ const MENU_ITEMS = [
   { id: 'm7', labelKey: 'helpSupport', icon: 'help-circle', route: '/help' },
   { id: 'm9', labelKey: 'contactSupport', icon: 'message-square', route: '/contact-support' },
   { id: 'm8', labelKey: 'settings', icon: 'settings', route: '/settings' },
-  { id: 'm10', labelKey: 'adminConsole', icon: 'shield', route: '/admin' },
 ];
 
 export default function ProfileScreen() {

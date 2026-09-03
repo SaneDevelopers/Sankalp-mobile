@@ -1,0 +1,21 @@
+{
+  "name": "sankalp-cf-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "hono": "^4.7.9",
+    "jose": "^5.10.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250430.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.14.4"
+  }
+}

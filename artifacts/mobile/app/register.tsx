@@ -138,12 +138,10 @@ export default function RegisterScreen() {
 
       console.log('[Register] Got token:', result.token ? result.token.substring(0, 15) + '…' : 'NULL');
       await AsyncStorage.setItem('auth_token', result.token);
-      // Verify the token was actually stored
-      const stored = await AsyncStorage.getItem('auth_token');
-      console.log('[Register] Verified stored token:', stored ? stored.substring(0, 15) + '…' : 'NULL');
+      await AsyncStorage.setItem('profile_completed', 'true');
       
       await queryClient.invalidateQueries();
-      router.replace('/complete-profile');
+      router.replace('/(tabs)');
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Registration failed';
       setError(message);

@@ -1,117 +1,40 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useRef, useCallback } from 'react';
-import {
-  StyleSheet,
-  useWindowDimensions,
-  ImageBackground,
-  Platform,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
-// Video dimensions
-const VIDEO_WIDTH = 480;
-const VIDEO_HEIGHT = 848;
-const VIDEO_ASPECT_RATIO = VIDEO_WIDTH / VIDEO_HEIGHT;
+export default function IndexScreen() {
+  useEffect(() => {
+    let isMounted = true;
 
-export default function SplashScreen() {
-  const videoRef = useRef<Video>(null);
-  const { width: SW, height: SH } = useWindowDimensions();
+    const checkAuthAndNavigate = async () => {
+      try {
+        const token = await AsyncStorage.getItem('auth_token');
+        if (!isMounted) return;
 
-  const hasNavigated = useRef(false);
+        if (token) {
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/login');
+        }
+      } catch {
+        if (isMounted) {
+          router.replace('/login');
+        }
+      }
+    };
 
-  const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
-    if (!status.isLoaded) return;
-    if (status.didJustFinish) {
-      navigateAway();
-    }
+    checkAuthAndNavigate();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const navigateAway = async () => {
-    if (hasNavigated.current) return;
-    hasNavigated.current = true;
-    try {
-      const token = await AsyncStorage.getItem('auth_token');
-      const profileCompleted = await AsyncStorage.getItem('profile_completed');
-      if (token && profileCompleted === 'false') {
-        router.replace('/complete-profile');
-      } else if (token) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/login');
-      }
-    } catch {
-      router.replace('/login');
-    }
-  };
-
-  // Calculate scaled dimensions to fit the screen size perfectly
-  const screenAspectRatio = SW / SH;
-  let videoWidth = SW;
-  let videoHeight = SH;
-
-  if (screenAspectRatio < VIDEO_ASPECT_RATIO) {
-    videoWidth = SW;
-    videoHeight = SW / VIDEO_ASPECT_RATIO;
-  } else {
-    videoHeight = SH;
-    videoWidth = SH * VIDEO_ASPECT_RATIO;
-  }
-
-  const isTallScreen = screenAspectRatio < VIDEO_ASPECT_RATIO;
-  const topGap = (SH - videoHeight) / 2;
-  const leftGap = (SW - videoWidth) / 2;
-
   return (
-    <ImageBackground
-      source={require('../assets/images/sankalp_bg.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-    >
-      <Video
-        ref={videoRef}
-        source={require('../assets/splashscreen.mp4')}
-        style={{ width: videoWidth, height: videoHeight }}
-        resizeMode={ResizeMode.CONTAIN}
-        shouldPlay
-        isMuted
-        isLooping={false}
-        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-      />
-
-      {isTallScreen ? (
-        <>
-          <LinearGradient
-            colors={['rgba(195, 175, 139, 0)', 'rgba(195, 175, 139, 1)', 'rgba(195, 175, 139, 0)']}
-            style={[styles.blendTop, { top: topGap - 20 }]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-          />
-          <LinearGradient
-            colors={['rgba(204, 184, 155, 0)', 'rgba(204, 184, 155, 1)', 'rgba(204, 184, 155, 0)']}
-            style={[styles.blendBottom, { top: topGap + videoHeight - 20 }]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-          />
-        </>
-      ) : (
-        <>
-          <LinearGradient
-            colors={['rgba(202, 184, 152, 0)', 'rgba(202, 184, 152, 1)', 'rgba(202, 184, 152, 0)']}
-            style={[styles.blendLeft, { left: leftGap - 20 }]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          />
-          <LinearGradient
-            colors={['rgba(202, 184, 152, 0)', 'rgba(202, 184, 152, 1)', 'rgba(202, 184, 152, 0)']}
-            style={[styles.blendRight, { left: leftGap + videoWidth - 20 }]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          />
-        </>
-      )}
-    </ImageBackground>
+    <View style={styles.container}>
+      <ActivityIndicator size="small" color="#7B1F1F" />
+    </View>
   );
 }
 
@@ -120,44 +43,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#caba9c',
-    ...(Platform.OS === 'web' && {
-      height: '100vh',
-      width: '100vw',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      overflow: 'hidden',
-      touchAction: 'none',
-      userSelect: 'none',
-    } as any),
-  },
-  blendTop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 40,
-    zIndex: 10,
-  },
-  blendBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 40,
-    zIndex: 10,
-  },
-  blendLeft: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 40,
-    zIndex: 10,
-  },
-  blendRight: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 40,
-    zIndex: 10,
+    backgroundColor: '#FAF3E8',
   },
 });

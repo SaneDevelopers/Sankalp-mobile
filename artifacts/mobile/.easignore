@@ -1,0 +1,6 @@
+# EAS ignore file
+node_modules
+.expo
+.git
+../../cf-worker
+../../artifacts/api-server
