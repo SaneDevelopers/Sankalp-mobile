@@ -114,7 +114,7 @@ export default function LoginScreen() {
         // We use our backend relay which Google accepts, and the relay bounces back to appReturnUrl
         const redirectUri = Platform.OS === 'web'
           ? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081')
-          : 'http://localhost:5001/api/auth/google/callback';
+          : `${process.env.EXPO_PUBLIC_API_URL || 'https://sankalp-api-dh9s.onrender.com'}/api/auth/google/callback`;
 
         const nonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
         

@@ -4,12 +4,12 @@
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/sankalp_logo.jpg",
+    "icon": "./assets/images/sankalp_logo.png",
     "scheme": "mobile",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/sankalp_logo.jpg",
+      "image": "./assets/images/sankalp_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAF3E8"
     },
@@ -17,20 +17,20 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.sankalp.mobile"
     },
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "#00000000",
+      "barStyle": "dark-content"
+    },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/sankalp_logo.jpg",
+        "foregroundImage": "./assets/images/sankalp_logo.png",
         "backgroundColor": "#FAF3E8"
       },
-      "package": "com.sankalp.mobile",
-      "statusBar": {
-        "translucent": true,
-        "backgroundColor": "transparent",
-        "barStyle": "dark-content"
-      }
+      "package": "com.sankalp.mobile"
     },
     "web": {
-      "favicon": "./assets/images/sankalp_logo.jpg"
+      "favicon": "./assets/images/sankalp_logo.png"
     },
     "plugins": [
       [
@@ -45,7 +45,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/sankalp_logo.jpg",
+          "icon": "./assets/images/sankalp_logo.png",
           "color": "#7B1F1F",
           "defaultChannel": "default",
           "sounds": []

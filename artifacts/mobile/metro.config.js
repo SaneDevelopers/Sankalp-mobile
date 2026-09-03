@@ -7,7 +7,8 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 const config = getDefaultConfig(projectRoot);
 
 // Watch both project and workspace root for pnpm monorepo symlinks
-config.watchFolders = [workspaceRoot];
+// Merge with Expo's default watchFolders so we don't override them
+config.watchFolders = [...(config.watchFolders || []), workspaceRoot];
 
 // Ensure Metro resolves modules from project node_modules and workspace root node_modules
 config.resolver.nodeModulesPaths = [
